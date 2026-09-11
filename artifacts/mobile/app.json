@@ -30,6 +30,10 @@
     "android": {
       "package": "com.scenders.ride",
       "versionCode": 2,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#D2691E"
+      },
       "intentFilters": [
         {
           "action": "VIEW",
