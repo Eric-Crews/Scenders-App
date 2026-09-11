@@ -1,0 +1,72 @@
+uploads = []
+
+[[generated]]
+id = "O97MpIqmqbUHx8r7eoSSh"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "fieldmaps app icon"
+
+[[generated]]
+id = "B423lC0pIOjv-lX0sVmxa"
+uri = "file://artifacts/site/public/hero-topo.png"
+type = "image"
+title = "Topographic map pattern"
+
+[[generated]]
+id = "cOzSgfzxObeuovKBQvzTV"
+uri = "file://artifacts/site/public/field-phone.png"
+type = "image"
+title = "Phone in wilderness"
+
+[[generated]]
+id = "P2swWocrtb9S3Ln5x04NO"
+uri = "file://artifacts/site/public/trailhead-map.png"
+type = "image"
+title = "Trailhead map"
+
+[[outputs]]
+id = "WqJgr6kda9Akq1K7Xf6Pa"
+uri = "file://assets/ads/mapper-one-web-banner-728x90.png"
+type = "image"
+title = "mapper.one Free Download Web Banner — 728 × 90"
+description = "Final topo trail-tracking banner without a button; includes the free-download message."
+logical_id = "37835d05-8126-47d5-9e4b-bb60f44e363f"
+
+[[outputs]]
+id = "yzdX8nLOqpvDtm-N5Goae"
+uri = "file://assets/ads/mapper-one-sidebar-300x250.png"
+type = "image"
+title = "mapper.one Recreation Sidebar Ad — 300 × 250"
+description = "Trail-tracking focused mapper.one sidebar display ad for Adventure Collective placements."
+logical_id = "aba5bc53-7745-463c-8e8c-9fbdc9237f89"
+
+[[outputs]]
+id = "s21hJB7rcdk89kIA6z738"
+uri = "file://artifacts/mobile/.release-artifacts/mapper-one-android-1.0.1.aab"
+type = "unspecified"
+title = "mapper.one Android App Bundle 1.0.1"
+description = "Signed Android App Bundle (.aab) for uploading to Google Play Console."
+logical_id = "d896e589-c6c5-4b24-9a37-d6bba44d3c43"
+
+[[outputs]]
+id = "OAsey26GRXNCmFQCHnAtw"
+uri = "file://attached_assets/mapper-one-feature-graphic.jpg"
+type = "image"
+title = "mapper.one recreation feature graphic"
+description = "Updated Google Play feature graphic — 1024 × 500 px, 113 KB."
+logical_id = "5057837d-93de-4749-ab15-d6abafdfc596"
+
+[[outputs]]
+id = "tmzFds2fJPTFzGR0TIfet"
+uri = "file://artifacts/mobile/.release-artifacts/mapper-one-android-1.0.2.aab"
+type = "unspecified"
+title = "Verified mapper.one Android App Bundle 1.0.2"
+description = "Previously verified signed Android App Bundle for mapper.one version 1.0.2 (version code 2)."
+logical_id = "faec1625-6bbc-41d1-ad31-0880aa098a86"
+
+[[outputs]]
+id = "p80yqakcT-AjAcGZq1Znm"
+uri = "file://artifacts/mobile/.android-credentials/mapper-one-upload-reset.pem"
+type = "unspecified"
+title = "Google Play upload-key certificate"
+description = "Public PEM certificate for the Google Play upload-key reset request. Upload this certificate in Play Console; it contains no private key.
