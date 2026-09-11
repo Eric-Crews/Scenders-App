@@ -50,8 +50,7 @@ async function readConfig(): Promise<FollowConfig | null> {
     if (!Array.isArray(parsed.route) || parsed.route.length < 2) return null;
     return {
       route: parsed.route as LatLng[],
-      threshold:
-        typeof parsed.threshold === "number" ? parsed.threshold : 50,
+      threshold: typeof parsed.threshold === "number" ? parsed.threshold : 50,
       alerts: parsed.alerts !== false,
       voice: parsed.voice === true,
     };
@@ -135,7 +134,8 @@ export async function evaluateOffRoute(loc: LatLng): Promise<void> {
     wasOff = false;
     if (config.alerts) announceOffRoute(false, config.voice);
   }
-  if (wasOff !== state.wasOffRoute) await writeFollowState({ wasOffRoute: wasOff });
+  if (wasOff !== state.wasOffRoute)
+    await writeFollowState({ wasOffRoute: wasOff });
 }
 
 // Register the background-location task at module scope (required by
@@ -197,7 +197,7 @@ export async function startBackgroundFollow(): Promise<boolean> {
       pausesUpdatesAutomatically: false,
       showsBackgroundLocationIndicator: true,
       foregroundService: {
-        notificationTitle: "mapper.one is guiding you",
+        notificationTitle: "Scenders Ride is guiding you",
         notificationBody: "Off-route alerts stay on with your screen locked.",
         notificationColor: "#2f6b46",
       },

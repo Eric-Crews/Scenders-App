@@ -34,8 +34,12 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="rides/[slug]" options={{ headerShown: false }} />
       <Stack.Screen name="discussions" options={{ title: "Discussions" }} />
-      <Stack.Screen name="donate" options={{ title: "Support development" }} />
+      <Stack.Screen
+        name="donate"
+        options={{ title: "Support Scenders Ride" }}
+      />
       <Stack.Screen name="share/[token]" options={{ title: "Shared route" }} />
       <Stack.Screen
         name="share-complete"

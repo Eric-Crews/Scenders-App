@@ -135,9 +135,10 @@ export default function LibraryScreen() {
     settings,
   } = useMaps();
   const [importing, setImporting] = useState(false);
-  const [cacheStats, setCacheStats] = useState<{ count: number; bytes: number }>(
-    { count: 0, bytes: 0 },
-  );
+  const [cacheStats, setCacheStats] = useState<{
+    count: number;
+    bytes: number;
+  }>({ count: 0, bytes: 0 });
 
   // Share-to-community dialog state
   const [pending, setPending] = useState<PendingImport | null>(null);
@@ -160,7 +161,9 @@ export default function LibraryScreen() {
   } | null>(null);
   // Per-region USGS National Digital Trails import state.
   const [usgsImporting, setUsgsImporting] = useState(false);
-  const [usgsProgress, setUsgsProgress] = useState<UsgsImportProgress | null>(null);
+  const [usgsProgress, setUsgsProgress] = useState<UsgsImportProgress | null>(
+    null,
+  );
   // Monotonic token so a slow earlier request can't overwrite a newer result.
   const communityReqSeq = useRef(0);
   // Same idea for region drilldowns: switching regions quickly must not let a
@@ -328,7 +331,8 @@ export default function LibraryScreen() {
   useEffect(() => {
     if (!selectedRegion || selectedRegion.kind !== "state") return;
     if (regionDatasetsLoading || usgsImporting) return;
-    if (regionDatasets.some((d) => d.description?.includes("[usgs-trail]"))) return;
+    if (regionDatasets.some((d) => d.description?.includes("[usgs-trail]")))
+      return;
     void (async () => {
       try {
         setUsgsImporting(true);
@@ -342,7 +346,7 @@ export default function LibraryScreen() {
         setUsgsImporting(false);
       }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRegion, regionDatasetsLoading, regionDatasets]);
 
   // Default to "Near you" when location is already granted, without prompting —
@@ -475,12 +479,19 @@ export default function LibraryScreen() {
               : parseGPX(text);
       }
       if (countFeatures(fc) === 0) {
-        Alert.alert("Empty dataset", "No map features were found in this file.");
+        Alert.alert(
+          "Empty dataset",
+          "No map features were found in this file.",
+        );
         return;
       }
       const bounds = computeBounds(fc);
-      const rawBaseName = file.name.replace(/\.(geojson|json|kml|kmz|gpx)$/i, "");
-      const baseName = fmt === "gpx" ? prettifyGpxName(rawBaseName) : rawBaseName;
+      const rawBaseName = file.name.replace(
+        /\.(geojson|json|kml|kmz|gpx)$/i,
+        "",
+      );
+      const baseName =
+        fmt === "gpx" ? prettifyGpxName(rawBaseName) : rawBaseName;
       // Open the share dialog before committing
       setPending({ name: baseName, format: fmt, geojson: fc, bounds });
       setShareName(baseName);
@@ -488,7 +499,10 @@ export default function LibraryScreen() {
       setShareAuthor("");
       setShareEnabled(false);
     } catch (err) {
-      Alert.alert("Import failed", err instanceof Error ? err.message : String(err));
+      Alert.alert(
+        "Import failed",
+        err instanceof Error ? err.message : String(err),
+      );
     } finally {
       setImporting(false);
     }
@@ -626,9 +640,9 @@ export default function LibraryScreen() {
 
     setBulkProgress(null);
     if (Platform.OS !== "web") {
-      Haptics.notificationAsync(
-        Haptics.NotificationFeedbackType.Success,
-      ).catch(() => {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {},
+      );
     }
     const imported = pending.length - failed;
     Alert.alert(
@@ -695,11 +709,16 @@ export default function LibraryScreen() {
       >
         <View style={[styles.colorChip, { backgroundColor: item.color }]} />
         <View style={{ flex: 1 }}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>
+          <Text
+            style={[styles.cardTitle, { color: colors.foreground }]}
+            numberOfLines={1}
+          >
             {item.name}
           </Text>
           {item.communityKind === "trail" || item.communityKind === "road" ? (
-            <View style={{ flexDirection: "row", marginTop: 2, marginBottom: 2 }}>
+            <View
+              style={{ flexDirection: "row", marginTop: 2, marginBottom: 2 }}
+            >
               <View
                 style={{
                   paddingHorizontal: 6,
@@ -717,7 +736,9 @@ export default function LibraryScreen() {
                     fontWeight: "600",
                     letterSpacing: 0.4,
                     color:
-                      item.communityKind === "road" ? "#c87a2a" : colors.primary,
+                      item.communityKind === "road"
+                        ? "#c87a2a"
+                        : colors.primary,
                   }}
                 >
                   {item.communityKind === "road" ? "OFF-ROAD" : "TRAIL"}
@@ -794,7 +815,7 @@ export default function LibraryScreen() {
       ? `${formatDistance(dist, settings.units)} away`
       : null;
     // Overpass datasets are regional background layers, not individual routes.
-    const isOverpass = !!(c.description?.includes("[overpass"));
+    const isOverpass = !!c.description?.includes("[overpass");
     return (
       <View
         key={c.id}
@@ -817,9 +838,19 @@ export default function LibraryScreen() {
             style={{ marginRight: 4 }}
           />
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                flexWrap: "wrap",
+              }}
+            >
               <Text
-                style={[styles.cardTitle, { color: colors.foreground, flexShrink: 1 }]}
+                style={[
+                  styles.cardTitle,
+                  { color: colors.foreground, flexShrink: 1 },
+                ]}
                 numberOfLines={1}
               >
                 {c.name}
@@ -833,7 +864,13 @@ export default function LibraryScreen() {
                     paddingVertical: 1,
                   }}
                 >
-                  <Text style={{ fontSize: 10, color: colors.mutedForeground, fontWeight: "600" }}>
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      color: colors.mutedForeground,
+                      fontWeight: "600",
+                    }}
+                  >
                     REGIONAL LAYER
                   </Text>
                 </View>
@@ -964,9 +1001,9 @@ export default function LibraryScreen() {
       >
         <View>
           <Text style={[styles.kicker, { color: colors.mutedForeground }]}>
-            mapper.one
+            SCENDERS
           </Text>
-          <Text style={[styles.h1, { color: colors.foreground }]}>Library</Text>
+          <Text style={[styles.h1, { color: colors.foreground }]}>Saved</Text>
         </View>
         <Pressable
           onPress={handleImport}
@@ -980,7 +1017,9 @@ export default function LibraryScreen() {
           ]}
         >
           <Feather name="upload" size={16} color={colors.primaryForeground} />
-          <Text style={[styles.importText, { color: colors.primaryForeground }]}>
+          <Text
+            style={[styles.importText, { color: colors.primaryForeground }]}
+          >
             {importing ? "Importing…" : "Import"}
           </Text>
         </Pressable>
@@ -997,14 +1036,20 @@ export default function LibraryScreen() {
         }}
         ListHeaderComponent={
           <View style={{ marginBottom: 8 }}>
-            <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+            >
               Datasets
             </Text>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Feather name="upload-cloud" size={32} color={colors.mutedForeground} />
+            <Feather
+              name="upload-cloud"
+              size={32}
+              color={colors.mutedForeground}
+            />
             <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
               No datasets yet
             </Text>
@@ -1023,8 +1068,14 @@ export default function LibraryScreen() {
                 },
               ]}
             >
-              <Feather name="upload" size={16} color={colors.primaryForeground} />
-              <Text style={[styles.importText, { color: colors.primaryForeground }]}>
+              <Feather
+                name="upload"
+                size={16}
+                color={colors.primaryForeground}
+              />
+              <Text
+                style={[styles.importText, { color: colors.primaryForeground }]}
+              >
                 Import a dataset
               </Text>
             </Pressable>
@@ -1039,7 +1090,9 @@ export default function LibraryScreen() {
                 justifyContent: "space-between",
               }}
             >
-              <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+              >
                 Community maps
               </Text>
               <Pressable
@@ -1060,7 +1113,6 @@ export default function LibraryScreen() {
                 />
               </Pressable>
             </View>
-
 
             <View
               style={[
@@ -1113,9 +1165,7 @@ export default function LibraryScreen() {
               })}
             </View>
 
-            {browseMode === "near" &&
-            communityLoadedOnce &&
-            !communityError ? (
+            {browseMode === "near" && communityLoadedOnce && !communityError ? (
               <>
                 <View
                   style={[
@@ -1140,7 +1190,10 @@ export default function LibraryScreen() {
                     style={[styles.searchInput, { color: colors.foreground }]}
                   />
                   {communitySearch ? (
-                    <Pressable onPress={() => setCommunitySearch("")} hitSlop={8}>
+                    <Pressable
+                      onPress={() => setCommunitySearch("")}
+                      hitSlop={8}
+                    >
                       <Feather
                         name="x"
                         size={15}
@@ -1174,7 +1227,10 @@ export default function LibraryScreen() {
                     hitSlop={8}
                     style={({ pressed }) => [
                       styles.locBtn,
-                      { borderColor: colors.border, opacity: pressed ? 0.6 : 1 },
+                      {
+                        borderColor: colors.border,
+                        opacity: pressed ? 0.6 : 1,
+                      },
                     ]}
                   >
                     <Feather
@@ -1196,7 +1252,10 @@ export default function LibraryScreen() {
                     hitSlop={8}
                     style={({ pressed }) => [
                       styles.locBtn,
-                      { borderColor: colors.border, opacity: pressed ? 0.6 : 1 },
+                      {
+                        borderColor: colors.border,
+                        opacity: pressed ? 0.6 : 1,
+                      },
                     ]}
                   >
                     <Feather
@@ -1249,10 +1308,7 @@ export default function LibraryScreen() {
                   >
                     <View style={{ flex: 1 }}>
                       <Text
-                        style={[
-                          styles.cardTitle,
-                          { color: colors.foreground },
-                        ]}
+                        style={[styles.cardTitle, { color: colors.foreground }]}
                         numberOfLines={1}
                       >
                         {selectedRegion.region}
@@ -1264,8 +1320,8 @@ export default function LibraryScreen() {
                         ]}
                       >
                         {selectedRegion.datasetCount}{" "}
-                        {selectedRegion.datasetCount === 1 ? "route" : "routes"} ·{" "}
-                        {formatBytes(selectedRegion.totalSizeBytes)}
+                        {selectedRegion.datasetCount === 1 ? "route" : "routes"}{" "}
+                        · {formatBytes(selectedRegion.totalSizeBytes)}
                         {selectedRegion.totalDistanceMeters != null
                           ? ` · ${formatDistance(selectedRegion.totalDistanceMeters, settings.units)} total`
                           : ""}
@@ -1521,10 +1577,7 @@ export default function LibraryScreen() {
                     />
                     <View style={{ flex: 1 }}>
                       <Text
-                        style={[
-                          styles.cardTitle,
-                          { color: colors.foreground },
-                        ]}
+                        style={[styles.cardTitle, { color: colors.foreground }]}
                         numberOfLines={1}
                       >
                         {r.region}
@@ -1579,7 +1632,10 @@ export default function LibraryScreen() {
                   color={colors.mutedForeground}
                 />
                 <Text
-                  style={[styles.cardMeta, { color: colors.mutedForeground, flex: 1 }]}
+                  style={[
+                    styles.cardMeta,
+                    { color: colors.mutedForeground, flex: 1 },
+                  ]}
                   numberOfLines={2}
                 >
                   Couldn’t reach the community library.
@@ -1592,9 +1648,16 @@ export default function LibraryScreen() {
                   { backgroundColor: colors.card, borderColor: colors.border },
                 ]}
               >
-                <Feather name="globe" size={16} color={colors.mutedForeground} />
+                <Feather
+                  name="globe"
+                  size={16}
+                  color={colors.mutedForeground}
+                />
                 <Text
-                  style={[styles.cardMeta, { color: colors.mutedForeground, flex: 1 }]}
+                  style={[
+                    styles.cardMeta,
+                    { color: colors.mutedForeground, flex: 1 },
+                  ]}
                 >
                   No community maps yet — be the first to share one when you
                   import.
@@ -1607,9 +1670,16 @@ export default function LibraryScreen() {
                   { backgroundColor: colors.card, borderColor: colors.border },
                 ]}
               >
-                <Feather name="search" size={16} color={colors.mutedForeground} />
+                <Feather
+                  name="search"
+                  size={16}
+                  color={colors.mutedForeground}
+                />
                 <Text
-                  style={[styles.cardMeta, { color: colors.mutedForeground, flex: 1 }]}
+                  style={[
+                    styles.cardMeta,
+                    { color: colors.mutedForeground, flex: 1 },
+                  ]}
                 >
                   No community maps match “{communitySearch.trim()}”.
                 </Text>
@@ -1639,7 +1709,9 @@ export default function LibraryScreen() {
                   {regions.length}{" "}
                   {regions.length === 1 ? "saved region" : "saved regions"}
                 </Text>
-                <Text style={[styles.cardMeta, { color: colors.mutedForeground }]}>
+                <Text
+                  style={[styles.cardMeta, { color: colors.mutedForeground }]}
+                >
                   {cacheStats.count} tiles ·{" "}
                   {(cacheStats.bytes / 1024 / 1024).toFixed(1)}MB cached
                 </Text>
@@ -1653,7 +1725,11 @@ export default function LibraryScreen() {
                     { opacity: pressed ? 0.6 : 1 },
                   ]}
                 >
-                  <Feather name="trash-2" size={18} color={colors.destructive} />
+                  <Feather
+                    name="trash-2"
+                    size={18}
+                    color={colors.destructive}
+                  />
                 </Pressable>
               )}
             </View>
@@ -1720,7 +1796,9 @@ export default function LibraryScreen() {
                 : ""}
             </Text>
 
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.fieldLabel, { color: colors.mutedForeground }]}
+            >
               Name
             </Text>
             <TextInput
@@ -1746,7 +1824,7 @@ export default function LibraryScreen() {
                 <Text
                   style={[styles.cardMeta, { color: colors.mutedForeground }]}
                 >
-                  Other mapper.one users can browse and download this map.
+                  Other Scenders Ride users can browse and download this map.
                 </Text>
               </View>
               <Switch

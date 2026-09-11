@@ -24,7 +24,9 @@ const MAX_USD = 100_000;
 export default function DonateScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { amount: selectedAmount } = useLocalSearchParams<{ amount?: string }>();
+  const { amount: selectedAmount } = useLocalSearchParams<{
+    amount?: string;
+  }>();
 
   const [amount, setAmount] = useState(selectedAmount ?? "10");
   const [submitting, setSubmitting] = useState(false);
@@ -37,7 +39,9 @@ export default function DonateScreen() {
       return;
     }
     if (dollars > MAX_USD) {
-      setError(`Please enter an amount no greater than $${MAX_USD.toLocaleString()}.`);
+      setError(
+        `Please enter an amount no greater than $${MAX_USD.toLocaleString()}.`,
+      );
       return;
     }
     setError(null);
@@ -67,20 +71,15 @@ export default function DonateScreen() {
         contentContainerStyle={{ padding: 20, gap: 18 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View
-          style={[
-            styles.heroCard,
-            { backgroundColor: colors.primary },
-          ]}
-        >
+        <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
           <Feather name="heart" size={26} color={colors.primaryForeground} />
           <Text style={[styles.heroTitle, { color: colors.primaryForeground }]}>
-            Keep the maps free
+            Keep the ride moving
           </Text>
           <Text style={[styles.heroBody, { color: colors.primaryForeground }]}>
-            mapper.one is free, open, and built on the shoulders of the
-            open-data community. If it&rsquo;s earned a place in your pack, chip
-            in whatever it&rsquo;s worth to you — one time, no subscription.
+            Scenders Ride is built on the shoulders of the open-data community.
+            If it&rsquo;s earned a place in your pack, chip in whatever
+            it&rsquo;s worth to you — one time, no subscription.
           </Text>
         </View>
 
@@ -188,7 +187,7 @@ export default function DonateScreen() {
           </Pressable>
 
           <Text style={[styles.fine, { color: colors.mutedForeground }]}>
-            Secure one-time payment via Stripe in your browser. mapper.one never
+            Secure one-time payment via Stripe in your browser. Scenders never
             sees your card details.
           </Text>
         </View>

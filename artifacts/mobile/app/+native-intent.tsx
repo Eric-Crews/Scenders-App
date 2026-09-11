@@ -16,7 +16,7 @@ export function redirectSystemPath({
   initial: boolean;
 }): string {
   try {
-    const url = new URL(path, "https://mapper.one");
+    const url = new URL(path, "https://scenders.com");
 
     // Private-share deep link: /s/<token>
     if (url.pathname.startsWith("/s/")) {
@@ -34,6 +34,20 @@ export function redirectSystemPath({
       const slug = url.pathname.slice("/trails/".length).split("/")[0];
       if (slug) {
         return `/?communityGuide=${encodeURIComponent(slug)}`;
+      }
+    }
+
+    // Scenders ride-guide deep link: /where-to-ride/<state>/<city>/<slug>
+    // The final segment is the stable guide slug; the preceding hierarchy is
+    // only for the web site's SEO-friendly URL.
+    if (url.pathname.startsWith("/where-to-ride/")) {
+      const parts = url.pathname
+        .slice("/where-to-ride/".length)
+        .split("/")
+        .filter(Boolean);
+      const slug = parts.at(-1);
+      if (slug) {
+        return `/rides/${encodeURIComponent(slug)}`;
       }
     }
   } catch {

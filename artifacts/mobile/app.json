@@ -1,34 +1,34 @@
 {
   "expo": {
-    "name": "mapper.one",
-    "slug": "mapperone",
+    "name": "Scenders Ride",
+    "slug": "scenders-ride",
     "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "scenders",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#2f6b46"
+      "backgroundColor": "#d2691e"
     },
     "ios": {
-      "bundleIdentifier": "com.mapper.one",
-      "associatedDomains": ["applinks:mapper.one"],
+      "bundleIdentifier": "com.scenders.ride",
+      "associatedDomains": ["applinks:scenders.com", "applinks:mapper.one"],
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "mapper.one uses your location to show your position on the map and track your movement in the field.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "mapper.one keeps your off-route alerts firing while the app is in your pocket or your screen is locked during a route follow.",
-        "NSCameraUsageDescription": "mapper.one uses the camera so you can attach a photo to a waypoint along your route.",
-        "NSPhotoLibraryUsageDescription": "mapper.one needs access to your photo library so you can attach existing photos to waypoints along your route.",
-        "NSPhotoLibraryAddUsageDescription": "mapper.one saves waypoint photos to your Camera Roll so you always have a copy on your device.",
-          "NSContactsUsageDescription": "mapper.one can choose a trusted contact to receive your private live route link.",
+        "NSLocationWhenInUseUsageDescription": "Scenders Ride uses your location to show your position and record your ride.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Scenders Ride keeps route guidance and off-route alerts working while your phone is locked or in your pocket.",
+        "NSCameraUsageDescription": "Scenders Ride uses the camera so you can attach a photo to a waypoint.",
+        "NSPhotoLibraryUsageDescription": "Scenders Ride uses your photo library so you can attach existing photos to waypoints.",
+        "NSPhotoLibraryAddUsageDescription": "Scenders Ride can save waypoint photos to your Camera Roll.",
+        "NSContactsUsageDescription": "Scenders Ride can choose a trusted contact to receive your private live ride link.",
         "UIBackgroundModes": ["location"]
       }
     },
     "android": {
-      "package": "com.mapper.one",
+      "package": "com.scenders.ride",
       "versionCode": 2,
       "intentFilters": [
         {
@@ -50,8 +50,8 @@
           "data": [
             {
               "scheme": "https",
-              "host": "mapper.one",
-              "pathPrefix": "/trails/"
+              "host": "scenders.com",
+              "pathPrefix": "/where-to-ride/"
             }
           ]
         }
@@ -81,8 +81,8 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "mapper.one uses your location to show your position on the map.",
-          "locationAlwaysAndWhenInUsePermission": "mapper.one keeps your off-route alerts firing while the app is in your pocket or your screen is locked during a route follow.",
+          "locationWhenInUsePermission": "Scenders Ride uses your location to show your position and record your ride.",
+          "locationAlwaysAndWhenInUsePermission": "Scenders Ride keeps route guidance and off-route alerts working while your phone is locked or in your pocket.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true,
           "isIosBackgroundLocationEnabled": true
@@ -97,8 +97,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "mapper.one needs access to your photo library so you can attach existing photos to waypoints along your route.",
-          "cameraPermission": "mapper.one uses the camera so you can attach a photo to a waypoint along your route."
+          "photosPermission": "Scenders Ride uses your photo library so you can attach existing photos to waypoints.",
+          "cameraPermission": "Scenders Ride uses the camera so you can attach a photo to a waypoint."
         }
       ]
     ],
@@ -106,11 +106,7 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "extra": {
-      "eas": {
-        "projectId": "ac90ab16-5672-4c49-a294-4cec23cc2896"
-      }
-    },
+    "extra": {},
     "assetBundlePatterns": ["assets/**/*"]
   }
 }

@@ -29,10 +29,7 @@ import {
 } from "@/lib/community";
 import { useAuth } from "@/lib/auth";
 import { shareTrack, unshareTrack } from "@/lib/sync";
-import {
-  formatDuration,
-  trackToFeatureCollection,
-} from "@/lib/trackRecording";
+import { formatDuration, trackToFeatureCollection } from "@/lib/trackRecording";
 import type { Track, TrackPoint } from "@/lib/types";
 import { formatDistance, formatElevation } from "@/lib/units";
 
@@ -81,7 +78,7 @@ export default function TracksScreen() {
     if (Platform.OS === "web") {
       Alert.alert(
         "Use the mobile app",
-        "Sharing links is done from the mapper.one mobile app.",
+        "Sharing links is done from the Scenders Ride mobile app.",
       );
       return;
     }
@@ -97,7 +94,7 @@ export default function TracksScreen() {
     if (isAuthenticated && (await refreshSession())) return true;
     Alert.alert(
       "Sign in to create a route link",
-      "Route links are connected to your mapper.one account so you can manage or revoke them later.",
+      "Route links are connected to your Scenders Ride account so you can manage or revoke them later.",
       [
         { text: "Not now", style: "cancel" },
         { text: "Sign in", onPress: () => void login() },
@@ -213,7 +210,10 @@ export default function TracksScreen() {
     if (!publishing) return;
     const name = title.trim();
     if (!name) {
-      Alert.alert("Title required", "Give your track a title before publishing.");
+      Alert.alert(
+        "Title required",
+        "Give your track a title before publishing.",
+      );
       return;
     }
     if (publishing.points.length < 2) {
@@ -253,7 +253,7 @@ export default function TracksScreen() {
     if (Platform.OS === "web") {
       Alert.alert(
         "Use the mobile app",
-        "Blog posts are generated from the mapper.one mobile app.",
+        "Ride stories are generated from the Scenders Ride mobile app.",
       );
       return;
     }
@@ -309,7 +309,7 @@ export default function TracksScreen() {
       const webUrl = `${WEB_BASE_URL}/blog/${post.slug}`;
       Alert.alert(
         "Blog post published",
-        `“${post.title}” is now live on mapper.one.`,
+        `“${post.title}” is now live on Scenders Ride.`,
         [
           { text: "Done", style: "cancel" },
           { text: "Open on web", onPress: () => Linking.openURL(webUrl) },
@@ -350,7 +350,10 @@ export default function TracksScreen() {
           onPress={() =>
             setExpandedId((prev) => (prev === item.id ? null : item.id))
           }
-          style={({ pressed }) => [styles.cardRow, { opacity: pressed ? 0.85 : 1 }]}
+          style={({ pressed }) => [
+            styles.cardRow,
+            { opacity: pressed ? 0.85 : 1 },
+          ]}
         >
           <View style={[styles.swatch, { backgroundColor: item.color }]} />
           <View style={{ flex: 1 }}>
@@ -376,7 +379,10 @@ export default function TracksScreen() {
                   color={colors.mutedForeground}
                 />
                 <Text
-                  style={[styles.kindBadgeText, { color: colors.mutedForeground }]}
+                  style={[
+                    styles.kindBadgeText,
+                    { color: colors.mutedForeground },
+                  ]}
                 >
                   {item.kind === "plotted" ? "Plotted" : "Recorded"}
                 </Text>
@@ -406,7 +412,10 @@ export default function TracksScreen() {
               router.push({ pathname: "/", params: { follow: item.id } })
             }
             hitSlop={10}
-            style={({ pressed: p }) => [styles.iconBtn, { opacity: p ? 0.6 : 1 }]}
+            style={({ pressed: p }) => [
+              styles.iconBtn,
+              { opacity: p ? 0.6 : 1 },
+            ]}
           >
             <Feather name="navigation" size={18} color={colors.primary} />
           </Pressable>
@@ -427,18 +436,28 @@ export default function TracksScreen() {
           <Pressable
             onPress={() => openShare(item)}
             hitSlop={10}
-            style={({ pressed: p }) => [styles.iconBtn, { opacity: p ? 0.6 : 1 }]}
+            style={({ pressed: p }) => [
+              styles.iconBtn,
+              { opacity: p ? 0.6 : 1 },
+            ]}
           >
             <Feather
               name="share-2"
               size={18}
-              color={item.shareToken ? colors.accent ?? colors.primary : colors.primary}
+              color={
+                item.shareToken
+                  ? (colors.accent ?? colors.primary)
+                  : colors.primary
+              }
             />
           </Pressable>
           <Pressable
             onPress={() => openPublish(item)}
             hitSlop={10}
-            style={({ pressed: p }) => [styles.iconBtn, { opacity: p ? 0.6 : 1 }]}
+            style={({ pressed: p }) => [
+              styles.iconBtn,
+              { opacity: p ? 0.6 : 1 },
+            ]}
           >
             <Feather name="upload-cloud" size={18} color={colors.primary} />
           </Pressable>
@@ -458,7 +477,10 @@ export default function TracksScreen() {
           <Pressable
             onPress={() => confirmRemove(item)}
             hitSlop={10}
-            style={({ pressed: p }) => [styles.iconBtn, { opacity: p ? 0.6 : 1 }]}
+            style={({ pressed: p }) => [
+              styles.iconBtn,
+              { opacity: p ? 0.6 : 1 },
+            ]}
           >
             <Feather name="trash-2" size={18} color={colors.destructive} />
           </Pressable>
@@ -485,13 +507,13 @@ export default function TracksScreen() {
       >
         <View>
           <Text style={[styles.kicker, { color: colors.mutedForeground }]}>
-            mapper.one
+            SCENDERS
           </Text>
-          <Text style={[styles.h1, { color: colors.foreground }]}>Tracks</Text>
+          <Text style={[styles.h1, { color: colors.foreground }]}>
+            My Rides
+          </Text>
         </View>
-        <View
-          style={[styles.countPill, { backgroundColor: colors.secondary }]}
-        >
+        <View style={[styles.countPill, { backgroundColor: colors.secondary }]}>
           <Text style={[styles.countText, { color: colors.foreground }]}>
             {tracks.length}
           </Text>
@@ -562,11 +584,13 @@ export default function TracksScreen() {
               {publishing
                 ? `${formatDistance(publishing.distanceMeters, settings.units)} · ${
                     publishing.pointCount
-                  } pts · shared so other mapper.one users can download it.`
+                  } pts · shared so other Scenders Ride users can download it.`
                 : ""}
             </Text>
 
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.fieldLabel, { color: colors.mutedForeground }]}
+            >
               Title
             </Text>
             <TextInput
@@ -584,7 +608,9 @@ export default function TracksScreen() {
               ]}
             />
 
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.fieldLabel, { color: colors.mutedForeground }]}
+            >
               Description (optional)
             </Text>
             <TextInput
@@ -606,7 +632,9 @@ export default function TracksScreen() {
               ]}
             />
 
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.fieldLabel, { color: colors.mutedForeground }]}
+            >
               Your handle (optional)
             </Text>
             <TextInput
@@ -657,7 +685,10 @@ export default function TracksScreen() {
                   />
                 ) : (
                   <Text
-                    style={[styles.btnText, { color: colors.primaryForeground }]}
+                    style={[
+                      styles.btnText,
+                      { color: colors.primaryForeground },
+                    ]}
                   >
                     Publish
                   </Text>
@@ -687,7 +718,9 @@ export default function TracksScreen() {
             </Text>
             {shareTarget ? (
               <>
-                <Text style={[styles.modalSub, { color: colors.mutedForeground }]}>
+                <Text
+                  style={[styles.modalSub, { color: colors.mutedForeground }]}
+                >
                   Choose how {shareTarget.name} should be shared.
                 </Text>
                 <Pressable
@@ -705,11 +738,22 @@ export default function TracksScreen() {
                 >
                   <Feather name="globe" size={18} color={colors.accent} />
                   <View style={styles.shareOptionText}>
-                    <Text style={[styles.shareOptionTitle, { color: colors.foreground }]}>
+                    <Text
+                      style={[
+                        styles.shareOptionTitle,
+                        { color: colors.foreground },
+                      ]}
+                    >
                       Public route · Free
                     </Text>
-                    <Text style={[styles.shareOptionSub, { color: colors.mutedForeground }]}>
-                      Add it to the community library and share the public route link.
+                    <Text
+                      style={[
+                        styles.shareOptionSub,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
+                      Add it to the community library and share the public route
+                      link.
                     </Text>
                   </View>
                 </Pressable>
@@ -730,11 +774,23 @@ export default function TracksScreen() {
                   >
                     <Feather name="lock" size={18} color={colors.primary} />
                     <View style={styles.shareOptionText}>
-                      <Text style={[styles.shareOptionTitle, { color: colors.foreground }]}>
+                      <Text
+                        style={[
+                          styles.shareOptionTitle,
+                          { color: colors.foreground },
+                        ]}
+                      >
                         Private route · Free · Permanent
                       </Text>
-                      <Text style={[styles.shareOptionSub, { color: colors.mutedForeground }]}>
-                        Create an unlisted, view-only route link. It remains active until you revoke it. A suggested $5 donation helps cover storage.
+                      <Text
+                        style={[
+                          styles.shareOptionSub,
+                          { color: colors.mutedForeground },
+                        ]}
+                      >
+                        Create an unlisted, view-only route link. It remains
+                        active until you revoke it. A suggested $5 donation
+                        helps cover storage.
                       </Text>
                     </View>
                   </Pressable>
@@ -742,80 +798,94 @@ export default function TracksScreen() {
 
                 {shareTarget.shareToken ? (
                   <>
-                  <View
-                    style={[
-                      styles.shareBadge,
-                      {
-                        borderColor: colors.border,
-                        backgroundColor: colors.background,
-                      },
-                    ]}
-                  >
-                    <Feather
-                      name={
-                        shareTarget.shareVisibility === "public" ? "globe" : "link"
-                      }
-                      size={14}
-                      color={
-                        shareTarget.shareVisibility === "public"
-                          ? colors.accent
-                          : colors.primary
-                      }
-                    />
-                    <Text style={[styles.shareBadgeText, { color: colors.mutedForeground }]}>
-                      {shareTarget.shareVisibility === "public"
-                        ? "Public route link active"
-                        : "Private route link active"}
-                    </Text>
-                  </View>
-                  <Text
-                    selectable
-                    style={[
-                      styles.shareUrl,
-                      {
-                        color: colors.foreground,
-                        borderColor: colors.border,
-                        backgroundColor: colors.background,
-                      },
-                    ]}
-                  >
-                    {shareUrlFor(shareTarget.shareToken)}
-                  </Text>
-                  <View style={styles.modalActions}>
-                    <Pressable
-                      onPress={() => stopSharing(shareTarget)}
-                      disabled={shareBusy}
-                      style={({ pressed }) => [
-                        styles.modalBtn,
+                    <View
+                      style={[
+                        styles.shareBadge,
                         {
                           borderColor: colors.border,
-                          opacity: shareBusy ? 0.6 : pressed ? 0.7 : 1,
+                          backgroundColor: colors.background,
                         },
                       ]}
                     >
-                      <Text style={[styles.btnText, { color: colors.foreground }]}>
+                      <Feather
+                        name={
+                          shareTarget.shareVisibility === "public"
+                            ? "globe"
+                            : "link"
+                        }
+                        size={14}
+                        color={
+                          shareTarget.shareVisibility === "public"
+                            ? colors.accent
+                            : colors.primary
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.shareBadgeText,
+                          { color: colors.mutedForeground },
+                        ]}
+                      >
+                        {shareTarget.shareVisibility === "public"
+                          ? "Public route link active"
+                          : "Private route link active"}
+                      </Text>
+                    </View>
+                    <Text
+                      selectable
+                      style={[
+                        styles.shareUrl,
+                        {
+                          color: colors.foreground,
+                          borderColor: colors.border,
+                          backgroundColor: colors.background,
+                        },
+                      ]}
+                    >
+                      {shareUrlFor(shareTarget.shareToken)}
+                    </Text>
+                    <View style={styles.modalActions}>
+                      <Pressable
+                        onPress={() => stopSharing(shareTarget)}
+                        disabled={shareBusy}
+                        style={({ pressed }) => [
+                          styles.modalBtn,
+                          {
+                            borderColor: colors.border,
+                            opacity: shareBusy ? 0.6 : pressed ? 0.7 : 1,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[styles.btnText, { color: colors.foreground }]}
+                        >
                           {shareTarget.shareVisibility === "public"
                             ? "Stop public link"
                             : "Revoke private link"}
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => shareExistingLink(shareTarget)}
-                      disabled={shareBusy}
-                      style={({ pressed }) => [
-                        styles.modalBtn,
-                        {
-                          backgroundColor: colors.primary,
-                          borderColor: colors.primary,
-                          opacity: shareBusy ? 0.6 : pressed ? 0.85 : 1,
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.btnText, { color: colors.primaryForeground }]}>
-                        Copy or share
-                      </Text>
-                    </Pressable>
-                  </View>
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => shareExistingLink(shareTarget)}
+                        disabled={shareBusy}
+                        style={({ pressed }) => [
+                          styles.modalBtn,
+                          {
+                            backgroundColor: colors.primary,
+                            borderColor: colors.primary,
+                            opacity: shareBusy ? 0.6 : pressed ? 0.85 : 1,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.btnText,
+                            { color: colors.primaryForeground },
+                          ]}
+                        >
+                          Copy or share
+                        </Text>
+                      </Pressable>
+                    </View>
                   </>
                 ) : null}
 
@@ -832,22 +902,31 @@ export default function TracksScreen() {
                     disabled={shareBusy}
                     style={({ pressed }) => [
                       styles.modalBtn,
-                      { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                      {
+                        borderColor: colors.border,
+                        opacity: pressed ? 0.7 : 1,
+                      },
                     ]}
                   >
-                    <Text style={[styles.btnText, { color: colors.foreground }]}>
+                    <Text
+                      style={[styles.btnText, { color: colors.foreground }]}
+                    >
                       Done
                     </Text>
                   </Pressable>
                 </View>
               </>
             ) : null}
-
           </View>
         </View>
       </Modal>
 
-      <Modal visible={blogBusy} transparent animationType="fade" statusBarTranslucent>
+      <Modal
+        visible={blogBusy}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
         <View style={styles.modalBackdrop}>
           <View
             style={[
@@ -865,8 +944,8 @@ export default function TracksScreen() {
                 { color: colors.mutedForeground, textAlign: "center" },
               ]}
             >
-              Writing an AI blog post from your track and photos. This can take a
-              moment.
+              Writing an AI blog post from your track and photos. This can take
+              a moment.
             </Text>
           </View>
         </View>

@@ -74,12 +74,14 @@ export type OfflineRegion = {
   createdAt: number;
 };
 
+export type GeoJSONPosition = [number, number] | [number, number, number];
+
 export type GeoJSONGeometry =
   | { type: "Point"; coordinates: [number, number] }
-  | { type: "LineString"; coordinates: [number, number][] }
+  | { type: "LineString"; coordinates: GeoJSONPosition[] }
   | { type: "Polygon"; coordinates: [number, number][][] }
-  | { type: "MultiPoint"; coordinates: [number, number][] }
-  | { type: "MultiLineString"; coordinates: [number, number][][] }
+  | { type: "MultiPoint"; coordinates: GeoJSONPosition[] }
+  | { type: "MultiLineString"; coordinates: GeoJSONPosition[][] }
   | { type: "MultiPolygon"; coordinates: [number, number][][][] };
 
 export type GeoJSONFeature = {
@@ -94,8 +96,8 @@ export type GeoJSONFeatureCollection = {
 };
 
 export const DATASET_COLORS = [
-  "#c8633a",
-  "#2f6b46",
+  "#d2691e",
+  "#4f7d57",
   "#3a6ec8",
   "#9b3ac8",
   "#c83a8e",
@@ -106,7 +108,7 @@ export const DATASET_COLORS = [
 
 /** Color palette for overlanding road datasets — amber/earth tones distinct from trail greens/blues. */
 export const ROAD_COLORS = [
-  "#c87a2a",
+  "#d2691e",
   "#b06020",
   "#c8a030",
   "#9a6010",

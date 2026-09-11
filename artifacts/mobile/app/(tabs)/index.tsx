@@ -123,6 +123,7 @@ export default function MapScreen() {
     follow?: string;
     edit?: string;
     dataset?: string;
+    followDataset?: string;
     communityGuide?: string;
   }>();
 
@@ -150,9 +151,10 @@ export default function MapScreen() {
   const [downloadProgress, setDownloadProgress] =
     useState<DownloadProgress | null>(null);
   const [downloadName, setDownloadName] = useState("");
-  const [cacheStats, setCacheStats] = useState<{ count: number; bytes: number }>(
-    { count: 0, bytes: 0 },
-  );
+  const [cacheStats, setCacheStats] = useState<{
+    count: number;
+    bytes: number;
+  }>({ count: 0, bytes: 0 });
 
   // Route plotting
   const [plotMode, setPlotMode] = useState(false);
@@ -184,7 +186,9 @@ export default function MapScreen() {
   const [liveShareSending, setLiveShareSending] = useState(false);
   const [liveReply, setLiveReply] = useState("");
   const [livePanelExpanded, setLivePanelExpanded] = useState(true);
-  const [seenViewerMessageIds, setSeenViewerMessageIds] = useState<string[]>([]);
+  const [seenViewerMessageIds, setSeenViewerMessageIds] = useState<string[]>(
+    [],
+  );
   const [selectedPlotIndex, setSelectedPlotIndex] = useState<number | null>(
     null,
   );
@@ -216,9 +220,10 @@ export default function MapScreen() {
 
   const activeLiveActivity =
     recording.liveActivity?.status === "active" ? recording.liveActivity : null;
-  const viewerMessages = activeLiveActivity?.messages.filter(
-    (message) => message.sender === "viewer",
-  ) ?? [];
+  const viewerMessages =
+    activeLiveActivity?.messages.filter(
+      (message) => message.sender === "viewer",
+    ) ?? [];
   const unreadViewerMessageCount = viewerMessages.filter(
     (message) => !seenViewerMessageIds.includes(message.id),
   ).length;
@@ -262,7 +267,7 @@ export default function MapScreen() {
     if (Platform.OS === "web") {
       Alert.alert(
         "Live sharing works in the mobile app",
-        "Open FieldMaps on your phone to create and protect a private live link.",
+        "Open Scenders Ride on your phone to create and protect a private live link.",
       );
       return;
     }
@@ -313,7 +318,8 @@ export default function MapScreen() {
       setLivePanelExpanded(true);
       await copyLiveLink(session.url);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Please try again.";
+      const message =
+        error instanceof Error ? error.message : "Please try again.";
       Alert.alert("Couldn't create the private link", message);
     } finally {
       setLiveShareSending(false);
@@ -321,7 +327,8 @@ export default function MapScreen() {
   };
 
   const editingTrack = useMemo(
-    () => (editTrackId ? tracks.find((t) => t.id === editTrackId) ?? null : null),
+    () =>
+      editTrackId ? (tracks.find((t) => t.id === editTrackId) ?? null) : null,
     [editTrackId, tracks],
   );
 
@@ -374,7 +381,9 @@ export default function MapScreen() {
   // followMarkerDist so the readout tracks the same point as the profile marker.
   const followClimbRemaining = useMemo(
     () =>
-      followTrack ? remainingElevation(followTrack.points, followMarkerDist) : null,
+      followTrack
+        ? remainingElevation(followTrack.points, followMarkerDist)
+        : null,
     [followTrack, followMarkerDist],
   );
 
@@ -383,7 +392,9 @@ export default function MapScreen() {
   // the same altitude samples as the climb-left readout above.
   const followNextPeakDist = useMemo(
     () =>
-      followTrack ? distanceToNextPeak(followTrack.points, followMarkerDist) : null,
+      followTrack
+        ? distanceToNextPeak(followTrack.points, followMarkerDist)
+        : null,
     [followTrack, followMarkerDist],
   );
 
@@ -433,11 +444,13 @@ export default function MapScreen() {
       // doesn't double-fire; only the announcement itself respects the toggle.
       wasOffRouteRef.current = true;
       void writeFollowState({ wasOffRoute: true });
-      if (settings.offRouteAlerts) announceOffRoute(true, settings.offRouteVoice);
+      if (settings.offRouteAlerts)
+        announceOffRoute(true, settings.offRouteVoice);
     } else if (wasOffRouteRef.current && off < threshold * BACK_ON_RATIO) {
       wasOffRouteRef.current = false;
       void writeFollowState({ wasOffRoute: false });
-      if (settings.offRouteAlerts) announceOffRoute(false, settings.offRouteVoice);
+      if (settings.offRouteAlerts)
+        announceOffRoute(false, settings.offRouteVoice);
     }
   }, [
     followTrack,
@@ -757,7 +770,8 @@ export default function MapScreen() {
           })
           .finally(() => {
             // Only the most recent request may clear the loading state.
-            if (datasetElevReqRef.current === token) setDatasetElevLoading(false);
+            if (datasetElevReqRef.current === token)
+              setDatasetElevLoading(false);
           });
       } else {
         setDatasetElevLoading(false);
@@ -766,30 +780,35 @@ export default function MapScreen() {
     [datasets, onlineEnabled],
   );
 
-  // Turn the tapped dataset into the active follow target, reusing the existing
+  // Turn a saved route into the active follow target, reusing the existing
   // follow-mode panel (remaining distance, off-route alerts, elevation, GPS dot).
+  const startFollowingDataset = useCallback(
+    (dataset: Dataset, points: TrackPoint[]) => {
+      if (points.length < 2) return;
+      const track = datasetToFollowTrack(dataset, points);
+      setPlotMode(false);
+      setFollowTrack(track);
+      if (!tracking) setTracking(true);
+      let west = Infinity,
+        south = Infinity,
+        east = -Infinity,
+        north = -Infinity;
+      for (const p of track.points) {
+        if (p.lng < west) west = p.lng;
+        if (p.lat < south) south = p.lat;
+        if (p.lng > east) east = p.lng;
+        if (p.lat > north) north = p.lat;
+      }
+      if (Number.isFinite(west)) {
+        mapRef.current?.fitBounds([west, south, east, north]);
+      }
+    },
+    [tracking],
+  );
+
   const followDataset = () => {
     if (!datasetDetail || datasetDetail.points.length < 2) return;
-    const track = datasetToFollowTrack(
-      datasetDetail.dataset,
-      datasetDetail.points,
-    );
-    setPlotMode(false);
-    setFollowTrack(track);
-    if (!tracking) setTracking(true);
-    let west = Infinity,
-      south = Infinity,
-      east = -Infinity,
-      north = -Infinity;
-    for (const p of track.points) {
-      if (p.lng < west) west = p.lng;
-      if (p.lat < south) south = p.lat;
-      if (p.lng > east) east = p.lng;
-      if (p.lat > north) north = p.lat;
-    }
-    if (Number.isFinite(west)) {
-      mapRef.current?.fitBounds([west, south, east, north]);
-    }
+    startFollowingDataset(datasetDetail.dataset, datasetDetail.points);
     setDatasetDetail(null);
   };
 
@@ -851,6 +870,25 @@ export default function MapScreen() {
     router.setParams({ dataset: undefined });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.dataset, datasets]);
+
+  // Scenders ride cards can launch directly into route following after saving
+  // the RideForest track as a normal on-device dataset.
+  useEffect(() => {
+    const raw = params.followDataset;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+    if (!id) return;
+    const dataset = datasets.find((item) => item.id === id);
+    if (!dataset) return;
+    const points = routePointsToTrackPoints(
+      datasetRouteCoords(dataset.geojson),
+    );
+    if (points.length >= 2) {
+      startFollowingDataset(dataset, points);
+    } else {
+      Alert.alert("Can’t follow this ride", "Its route track is unavailable.");
+    }
+    router.setParams({ followDataset: undefined });
+  }, [datasets, params.followDataset, startFollowingDataset]);
 
   // Resolve a trail-guide deep link (?communityGuide=<slug>) delivered by the
   // native-intent redirector. The flow is:
@@ -937,7 +975,9 @@ export default function MapScreen() {
       } catch (err) {
         Alert.alert(
           "Trail guide unavailable",
-          err instanceof Error ? err.message : "Could not load the trail guide.",
+          err instanceof Error
+            ? err.message
+            : "Could not load the trail guide.",
         );
       } finally {
         communityGuideResolvingRef.current = null;
@@ -1078,7 +1118,10 @@ export default function MapScreen() {
     if (editTrackId) {
       // Editing an existing route: update in place rather than duplicating it.
       updateTrack(editTrackId, {
-        name: plotName.trim() || editingTrack?.name || `Route ${new Date().toLocaleDateString()}`,
+        name:
+          plotName.trim() ||
+          editingTrack?.name ||
+          `Route ${new Date().toLocaleDateString()}`,
         description: plotDescription.trim() || null,
         points,
         distanceMeters,
@@ -1131,17 +1174,22 @@ export default function MapScreen() {
     if (!pendingWaypoint) return;
     const name = waypointName.trim() || undefined;
     const notes = waypointNotes.trim() || undefined;
-    const createdWaypoint = addWaypoint(pendingWaypoint.lat, pendingWaypoint.lng, name, notes, {
-      trackId: pendingWaypoint.trackId,
-      photoUri: pendingWaypoint.photoUri,
-    });
+    const createdWaypoint = addWaypoint(
+      pendingWaypoint.lat,
+      pendingWaypoint.lng,
+      name,
+      notes,
+      {
+        trackId: pendingWaypoint.trackId,
+        photoUri: pendingWaypoint.photoUri,
+      },
+    );
     if (pendingWaypoint.trackId === recording.recordingTrackId) {
       recording.shareLiveWaypoint(createdWaypoint);
     }
 
     if (waypointPublish) {
-      const displayName =
-        name ?? `Waypoint ${new Date().toLocaleTimeString()}`;
+      const displayName = name ?? `Waypoint ${new Date().toLocaleTimeString()}`;
       const snap = { ...pendingWaypoint };
       (async () => {
         let photoUrl: string | null = null;
@@ -1270,7 +1318,10 @@ export default function MapScreen() {
       number,
     ][];
     if (bs.length === 0) {
-      Alert.alert("No active datasets", "Import a dataset from the Library tab to get started.");
+      Alert.alert(
+        "No active datasets",
+        "Import a dataset from the Library tab to get started.",
+      );
       return;
     }
     let west = Infinity,
@@ -1410,15 +1461,15 @@ export default function MapScreen() {
           <View
             style={[
               styles.statusDot,
-              { backgroundColor: onlineEnabled ? colors.primary : colors.accent },
+              {
+                backgroundColor: onlineEnabled ? colors.primary : colors.accent,
+              },
             ]}
           />
           <Text style={[styles.topPillText, { color: colors.foreground }]}>
             {onlineEnabled ? "Online" : "Offline"}
           </Text>
-          <View
-            style={[styles.divider, { backgroundColor: colors.border }]}
-          />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <Text style={[styles.topPillSub, { color: colors.mutedForeground }]}>
             {visibleDatasets.length}{" "}
             {visibleDatasets.length === 1 ? "dataset" : "datasets"}
@@ -1457,7 +1508,11 @@ export default function MapScreen() {
             <Feather
               name="radio"
               size={20}
-              color={recording.liveActivity?.status === "active" ? colors.accent : colors.foreground}
+              color={
+                recording.liveActivity?.status === "active"
+                  ? colors.accent
+                  : colors.foreground
+              }
             />
           </MapControl>
         )}
@@ -1476,113 +1531,114 @@ export default function MapScreen() {
 
       {/* Bottom GPS button */}
       {!plotMode && !followTrack && (
-      <View
-        style={[
-          styles.bottomActions,
-          {
-            bottom:
-              insets.bottom +
-              WEB_BOTTOM_INSET +
-              (Platform.OS === "ios" ? 96 : 84),
-            right: 16,
-          },
-        ]}
-      >
-        <Pressable
-          onPress={async () => {
-            if (Platform.OS !== "web") {
-              Haptics.selectionAsync().catch(() => {});
-            }
-            if (recording.isRecording) {
-              const t = await recording.stop();
-              if (t) {
-                setPostSaveTrack(t);
-                setPostSaveShareEnabled(false);
-                setPostSaveAuthor("");
-              } else {
-                Alert.alert(
-                  "Track too short",
-                  "Need at least two GPS points to save a track.",
-                );
-              }
-            } else {
-              try {
-                if (!tracking) setTracking(true);
-                await recording.start();
-              } catch (err) {
-                Alert.alert(
-                  "Couldn't start recording",
-                  err instanceof Error ? err.message : "Unknown error",
-                );
-              }
-            }
-          }}
-          style={({ pressed }) => [
-            styles.gpsBtn,
+        <View
+          style={[
+            styles.bottomActions,
             {
-              backgroundColor: recording.isRecording
-                ? colors.destructive
-                : colors.background,
-              opacity: pressed ? 0.85 : 1,
-              marginBottom: 10,
+              bottom:
+                insets.bottom +
+                WEB_BOTTOM_INSET +
+                (Platform.OS === "ios" ? 96 : 84),
+              right: 16,
             },
           ]}
         >
-          <Feather
-            name={recording.isRecording ? "square" : "circle"}
-            size={22}
-            color={
-              recording.isRecording
-                ? colors.primaryForeground
-                : colors.destructive
-            }
-          />
-        </Pressable>
-        {recording.isRecording && (
           <Pressable
-            onPress={openPoiMenu}
+            onPress={async () => {
+              if (Platform.OS !== "web") {
+                Haptics.selectionAsync().catch(() => {});
+              }
+              if (recording.isRecording) {
+                const t = await recording.stop();
+                if (t) {
+                  setPostSaveTrack(t);
+                  setPostSaveShareEnabled(false);
+                  setPostSaveAuthor("");
+                } else {
+                  Alert.alert(
+                    "Track too short",
+                    "Need at least two GPS points to save a track.",
+                  );
+                }
+              } else {
+                try {
+                  if (!tracking) setTracking(true);
+                  await recording.start();
+                } catch (err) {
+                  Alert.alert(
+                    "Couldn't start recording",
+                    err instanceof Error ? err.message : "Unknown error",
+                  );
+                }
+              }
+            }}
             style={({ pressed }) => [
               styles.gpsBtn,
               {
-                backgroundColor: colors.primary,
+                backgroundColor: recording.isRecording
+                  ? colors.destructive
+                  : colors.background,
                 opacity: pressed ? 0.85 : 1,
                 marginBottom: 10,
               },
             ]}
           >
             <Feather
-              name="map-pin"
+              name={recording.isRecording ? "square" : "circle"}
               size={22}
-              color={colors.primaryForeground}
+              color={
+                recording.isRecording
+                  ? colors.primaryForeground
+                  : colors.destructive
+              }
             />
           </Pressable>
-        )}
-        <Pressable
-          onPress={() => {
-            setTracking((v) => !v);
-            if (Platform.OS !== "web") {
-              Haptics.selectionAsync().catch(() => {});
-            }
-          }}
-          style={({ pressed }) => [
-            styles.gpsBtn,
-            {
-              backgroundColor: tracking ? colors.primary : colors.background,
-              opacity: pressed ? 0.85 : 1,
-            },
-          ]}
-        >
-          <Feather
-            name={tracking ? "navigation" : "crosshair"}
-            size={22}
-            color={tracking ? colors.primaryForeground : colors.foreground}
-          />
-        </Pressable>
-      </View>
+          {recording.isRecording && (
+            <Pressable
+              onPress={openPoiMenu}
+              style={({ pressed }) => [
+                styles.gpsBtn,
+                {
+                  backgroundColor: colors.primary,
+                  opacity: pressed ? 0.85 : 1,
+                  marginBottom: 10,
+                },
+              ]}
+            >
+              <Feather
+                name="map-pin"
+                size={22}
+                color={colors.primaryForeground}
+              />
+            </Pressable>
+          )}
+          <Pressable
+            onPress={() => {
+              setTracking((v) => !v);
+              if (Platform.OS !== "web") {
+                Haptics.selectionAsync().catch(() => {});
+              }
+            }}
+            style={({ pressed }) => [
+              styles.gpsBtn,
+              {
+                backgroundColor: tracking ? colors.primary : colors.background,
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Feather
+              name={tracking ? "navigation" : "crosshair"}
+              size={22}
+              color={tracking ? colors.primaryForeground : colors.foreground}
+            />
+          </Pressable>
+        </View>
       )}
 
-      {recording.isRecording && !plotMode && (
-        activeLiveActivity && !livePanelExpanded ? (
+      {recording.isRecording &&
+        !plotMode &&
+        (activeLiveActivity && !livePanelExpanded ? (
           <Pressable
             accessibilityLabel={
               unreadViewerMessageCount
@@ -1607,220 +1663,313 @@ export default function MapScreen() {
           >
             <Feather name="radio" size={18} color={colors.primary} />
             {unreadViewerMessageCount > 0 && (
-              <View style={[styles.liveUnreadBadge, { backgroundColor: colors.destructive }]}>
-                <Text style={[styles.liveUnreadBadgeText, { color: colors.primaryForeground }]}>
-                  {unreadViewerMessageCount > 9 ? "9+" : unreadViewerMessageCount}
+              <View
+                style={[
+                  styles.liveUnreadBadge,
+                  { backgroundColor: colors.destructive },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.liveUnreadBadgeText,
+                    { color: colors.primaryForeground },
+                  ]}
+                >
+                  {unreadViewerMessageCount > 9
+                    ? "9+"
+                    : unreadViewerMessageCount}
                 </Text>
               </View>
             )}
           </Pressable>
         ) : (
-        <View
-          style={[
-            styles.livePanel,
-            {
-              backgroundColor: colors.background,
-              borderColor: colors.border,
-              bottom:
-                insets.bottom +
-                WEB_BOTTOM_INSET +
+          <View
+            style={[
+              styles.livePanel,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+                bottom:
+                  insets.bottom +
+                  WEB_BOTTOM_INSET +
                   (Platform.OS === "ios" ? 96 : 84) +
                   (followTrack ? 260 : 0),
-              left: 16,
-              right: 92,
-            },
-          ]}
-        >
-          {recording.liveActivity?.status === "active" ? (
-            <>
-              <View style={styles.livePanelHeader}>
-                <Feather name="radio" size={16} color={colors.primary} />
+                left: 16,
+                right: 92,
+              },
+            ]}
+          >
+            {recording.liveActivity?.status === "active" ? (
+              <>
+                <View style={styles.livePanelHeader}>
+                  <Feather name="radio" size={16} color={colors.primary} />
+                  <Text
+                    style={[
+                      styles.livePanelTitle,
+                      { color: colors.foreground },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    Sharing live: {recording.liveActivity.name}
+                  </Text>
+                  {unreadViewerMessageCount > 0 && (
+                    <View
+                      style={[
+                        styles.liveUnreadBadge,
+                        { backgroundColor: colors.destructive },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.liveUnreadBadgeText,
+                          { color: colors.primaryForeground },
+                        ]}
+                      >
+                        {unreadViewerMessageCount > 9
+                          ? "9+"
+                          : unreadViewerMessageCount}
+                      </Text>
+                    </View>
+                  )}
+                  <Pressable
+                    accessibilityLabel="Minimize live sharing controls"
+                    hitSlop={8}
+                    onPress={() => setLivePanelExpanded(false)}
+                  >
+                    <Feather
+                      name="chevron-down"
+                      size={18}
+                      color={colors.mutedForeground}
+                    />
+                  </Pressable>
+                </View>
                 <Text
-                  style={[styles.livePanelTitle, { color: colors.foreground }]}
-                  numberOfLines={1}
+                  style={[
+                    styles.modePanelHint,
+                    { color: colors.mutedForeground },
+                  ]}
                 >
-                  Sharing live: {recording.liveActivity.name}
+                  {liveSyncHint}
                 </Text>
-                {unreadViewerMessageCount > 0 && (
-                  <View style={[styles.liveUnreadBadge, { backgroundColor: colors.destructive }]}>
-                    <Text style={[styles.liveUnreadBadgeText, { color: colors.primaryForeground }]}>
-                      {unreadViewerMessageCount > 9 ? "9+" : unreadViewerMessageCount}
-                    </Text>
-                  </View>
-                )}
+                {queuedLiveUpdateCount > 0 &&
+                  liveSyncState !== "up-to-date" && (
+                    <Pressable
+                      onPress={() => void recording.refreshLiveShare()}
+                      style={({ pressed }) => [
+                        styles.liveRetryAction,
+                        {
+                          borderColor: colors.border,
+                          opacity: pressed ? 0.7 : 1,
+                        },
+                      ]}
+                    >
+                      <Feather
+                        name="refresh-cw"
+                        size={13}
+                        color={colors.primary}
+                      />
+                      <Text
+                        style={[
+                          styles.liveRetryActionText,
+                          { color: colors.foreground },
+                        ]}
+                      >
+                        Retry live sync
+                      </Text>
+                    </Pressable>
+                  )}
                 <Pressable
-                  accessibilityLabel="Minimize live sharing controls"
-                  hitSlop={8}
-                  onPress={() => setLivePanelExpanded(false)}
-                >
-                  <Feather name="chevron-down" size={18} color={colors.mutedForeground} />
-                </Pressable>
-              </View>
-              <Text
-                style={[styles.modePanelHint, { color: colors.mutedForeground }]}
-              >
-                {liveSyncHint}
-              </Text>
-              {queuedLiveUpdateCount > 0 && liveSyncState !== "up-to-date" && (
-                <Pressable
-                  onPress={() => void recording.refreshLiveShare()}
+                  onPress={() => void copyLiveLink()}
+                  disabled={!recording.liveActivity.url}
                   style={({ pressed }) => [
-                    styles.liveRetryAction,
+                    styles.liveLinkAction,
                     {
                       borderColor: colors.border,
-                      opacity: pressed ? 0.7 : 1,
+                      backgroundColor: colors.card,
+                      opacity: !recording.liveActivity?.url
+                        ? 0.48
+                        : pressed
+                          ? 0.72
+                          : 1,
                     },
                   ]}
                 >
-                  <Feather name="refresh-cw" size={13} color={colors.primary} />
-                  <Text style={[styles.liveRetryActionText, { color: colors.foreground }]}>
-                    Retry live sync
+                  <Feather name="copy" size={14} color={colors.primary} />
+                  <Text
+                    style={[
+                      styles.liveLinkActionText,
+                      { color: colors.foreground },
+                    ]}
+                  >
+                    {recording.liveActivity.url
+                      ? "Copy private link"
+                      : "Refreshing private link…"}
                   </Text>
                 </Pressable>
-              )}
-              <Pressable
-                onPress={() => void copyLiveLink()}
-                disabled={!recording.liveActivity.url}
-                style={({ pressed }) => [
-                  styles.liveLinkAction,
-                  {
-                    borderColor: colors.border,
-                    backgroundColor: colors.card,
-                    opacity: !recording.liveActivity?.url ? 0.48 : pressed ? 0.72 : 1,
-                  },
-                ]}
-              >
-                <Feather name="copy" size={14} color={colors.primary} />
-                <Text style={[styles.liveLinkActionText, { color: colors.foreground }]}>
-                  {recording.liveActivity.url
-                    ? "Copy private link"
-                    : "Refreshing private link…"}
-                </Text>
-              </Pressable>
-              {recording.liveActivity.messages
-                .filter((message) => message.sender === "viewer")
-                .slice(-1)
-                .map((message) => (
-                  <View
-                    key={message.id}
-                    style={[
-                      styles.liveMessage,
-                      { backgroundColor: colors.secondary, borderColor: colors.border },
-                    ]}
-                  >
-                    <Feather name="message-circle" size={14} color={colors.primary} />
-                    <Text
-                      style={[styles.liveMessageText, { color: colors.foreground }]}
-                      numberOfLines={2}
+                {recording.liveActivity.messages
+                  .filter((message) => message.sender === "viewer")
+                  .slice(-1)
+                  .map((message) => (
+                    <View
+                      key={message.id}
+                      style={[
+                        styles.liveMessage,
+                        {
+                          backgroundColor: colors.secondary,
+                          borderColor: colors.border,
+                        },
+                      ]}
                     >
-                      {message.displayName || "Viewer"}: {message.body}
-                    </Text>
-                  </View>
-                ))}
-              <View style={styles.liveQuickReplies}>
-                {["All good", "On my way", "Almost done"].map((reply) => (
-                  <Pressable
-                    key={reply}
-                    onPress={() => void recording.sendLiveReply(reply)}
-                    style={({ pressed }) => [
-                      styles.liveQuickReply,
+                      <Feather
+                        name="message-circle"
+                        size={14}
+                        color={colors.primary}
+                      />
+                      <Text
+                        style={[
+                          styles.liveMessageText,
+                          { color: colors.foreground },
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {message.displayName || "Viewer"}: {message.body}
+                      </Text>
+                    </View>
+                  ))}
+                <View style={styles.liveQuickReplies}>
+                  {["All good", "On my way", "Almost done"].map((reply) => (
+                    <Pressable
+                      key={reply}
+                      onPress={() => void recording.sendLiveReply(reply)}
+                      style={({ pressed }) => [
+                        styles.liveQuickReply,
+                        {
+                          borderColor: colors.border,
+                          opacity: pressed ? 0.7 : 1,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.liveQuickReplyText,
+                          { color: colors.foreground },
+                        ]}
+                      >
+                        {reply}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <View style={styles.liveReplyRow}>
+                  <TextInput
+                    value={liveReply}
+                    onChangeText={setLiveReply}
+                    placeholder="Reply"
+                    placeholderTextColor={colors.mutedForeground}
+                    maxLength={280}
+                    style={[
+                      styles.liveReplyInput,
                       {
                         borderColor: colors.border,
-                        opacity: pressed ? 0.7 : 1,
+                        color: colors.foreground,
+                        backgroundColor: colors.card,
+                      },
+                    ]}
+                  />
+                  <Pressable
+                    onPress={() => {
+                      void recording.sendLiveReply(liveReply);
+                      setLiveReply("");
+                    }}
+                    disabled={!liveReply.trim()}
+                    style={({ pressed }) => [
+                      styles.liveSend,
+                      {
+                        backgroundColor: colors.primary,
+                        opacity: !liveReply.trim() ? 0.45 : pressed ? 0.75 : 1,
                       },
                     ]}
                   >
-                    <Text style={[styles.liveQuickReplyText, { color: colors.foreground }]}>
-                      {reply}
-                    </Text>
+                    <Feather
+                      name="send"
+                      size={15}
+                      color={colors.primaryForeground}
+                    />
                   </Pressable>
-                ))}
-              </View>
-              <View style={styles.liveReplyRow}>
-                <TextInput
-                  value={liveReply}
-                  onChangeText={setLiveReply}
-                  placeholder="Reply"
-                  placeholderTextColor={colors.mutedForeground}
-                  maxLength={280}
-                  style={[
-                    styles.liveReplyInput,
-                    {
-                      borderColor: colors.border,
-                      color: colors.foreground,
-                      backgroundColor: colors.card,
-                    },
-                  ]}
-                />
+                </View>
                 <Pressable
-                  onPress={() => {
-                    void recording.sendLiveReply(liveReply);
-                    setLiveReply("");
-                  }}
-                  disabled={!liveReply.trim()}
+                  onPress={() =>
+                    Alert.alert(
+                      "Stop live sharing?",
+                      "This immediately invalidates the private link. Your local recording will continue.",
+                      [
+                        { text: "Keep sharing", style: "cancel" },
+                        {
+                          text: "Stop sharing",
+                          style: "destructive",
+                          onPress: () => void recording.revokeLiveShare(),
+                        },
+                      ],
+                    )
+                  }
+                >
+                  <Text
+                    style={[styles.liveStopText, { color: colors.destructive }]}
+                  >
+                    Stop sharing and invalidate link
+                  </Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <View style={styles.livePanelHeader}>
+                  <Feather name="send" size={16} color={colors.primary} />
+                  <Text
+                    style={[
+                      styles.livePanelTitle,
+                      { color: colors.foreground },
+                    ]}
+                  >
+                    Share this live activity
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.modePanelHint,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
+                  Create a private link to your current route. Copy it into your
+                  preferred SMS or messaging app.
+                </Text>
+                <Pressable
+                  onPress={() => void openLiveShare()}
                   style={({ pressed }) => [
-                    styles.liveSend,
+                    styles.primaryBtn,
                     {
                       backgroundColor: colors.primary,
-                      opacity: !liveReply.trim() ? 0.45 : pressed ? 0.75 : 1,
+                      opacity: pressed ? 0.8 : 1,
                     },
                   ]}
                 >
-                  <Feather name="send" size={15} color={colors.primaryForeground} />
+                  <Feather
+                    name="link"
+                    size={16}
+                    color={colors.primaryForeground}
+                  />
+                  <Text
+                    style={[
+                      styles.primaryBtnText,
+                      { color: colors.primaryForeground },
+                    ]}
+                  >
+                    Create private live link
+                  </Text>
                 </Pressable>
-              </View>
-              <Pressable
-                onPress={() =>
-                  Alert.alert(
-                    "Stop live sharing?",
-                    "This immediately invalidates the private link. Your local recording will continue.",
-                    [
-                      { text: "Keep sharing", style: "cancel" },
-                      {
-                        text: "Stop sharing",
-                        style: "destructive",
-                        onPress: () => void recording.revokeLiveShare(),
-                      },
-                    ],
-                  )
-                }
-              >
-                <Text style={[styles.liveStopText, { color: colors.destructive }]}>
-                  Stop sharing and invalidate link
-                </Text>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <View style={styles.livePanelHeader}>
-                <Feather name="send" size={16} color={colors.primary} />
-                <Text style={[styles.livePanelTitle, { color: colors.foreground }]}>
-                  Share this live activity
-                </Text>
-              </View>
-              <Text
-                style={[styles.modePanelHint, { color: colors.mutedForeground }]}
-              >
-                Create a private link to your current route. Copy it into your
-                preferred SMS or messaging app.
-              </Text>
-              <Pressable
-                onPress={() => void openLiveShare()}
-                style={({ pressed }) => [
-                  styles.primaryBtn,
-                  { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 },
-                ]}
-              >
-                <Feather name="link" size={16} color={colors.primaryForeground} />
-                <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>
-                  Create private live link
-                </Text>
-              </Pressable>
-            </>
-          )}
-        </View>
-        )
-      )}
+              </>
+            )}
+          </View>
+        ))}
 
       <Sheet
         visible={liveShareOpen}
@@ -1833,12 +1982,17 @@ export default function MapScreen() {
             Location updates may pause outside coverage; you can invalidate the
             link at any time.
           </Text>
-          <Text style={[styles.label, { color: colors.foreground }]}>Activity name</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>
+            Activity name
+          </Text>
           <TextInput
             value={liveShareName}
             onChangeText={setLiveShareName}
             maxLength={120}
-            style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
+            style={[
+              styles.input,
+              { borderColor: colors.border, color: colors.foreground },
+            ]}
           />
           <Text style={[styles.label, { color: colors.foreground }]}>
             Your display name
@@ -1849,10 +2003,15 @@ export default function MapScreen() {
             placeholder="Sam"
             placeholderTextColor={colors.mutedForeground}
             maxLength={80}
-            style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
+            style={[
+              styles.input,
+              { borderColor: colors.border, color: colors.foreground },
+            ]}
           />
           {followTrack ? (
-            <Text style={[styles.liveNotice, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.liveNotice, { color: colors.mutedForeground }]}
+            >
               Viewers will also see the followed trail: {followTrack.name}.
             </Text>
           ) : null}
@@ -1868,7 +2027,12 @@ export default function MapScreen() {
             ]}
           >
             <Feather name="copy" size={17} color={colors.primaryForeground} />
-            <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>
+            <Text
+              style={[
+                styles.primaryBtnText,
+                { color: colors.primaryForeground },
+              ]}
+            >
               {liveShareSending
                 ? "Creating private link…"
                 : "Create and copy private link"}
@@ -2020,10 +2184,16 @@ export default function MapScreen() {
                   onPress={() => setSelectedPlotIndex(null)}
                   style={({ pressed }) => [
                     styles.selectedBtn,
-                    { borderColor: colors.border, borderWidth: 1, opacity: pressed ? 0.7 : 1 },
+                    {
+                      borderColor: colors.border,
+                      borderWidth: 1,
+                      opacity: pressed ? 0.7 : 1,
+                    },
                   ]}
                 >
-                  <Text style={[styles.modeBtnText, { color: colors.foreground }]}>
+                  <Text
+                    style={[styles.modeBtnText, { color: colors.foreground }]}
+                  >
                     Done
                   </Text>
                 </Pressable>
@@ -2042,7 +2212,11 @@ export default function MapScreen() {
                 },
               ]}
             >
-              <Feather name="corner-up-left" size={16} color={colors.foreground} />
+              <Feather
+                name="corner-up-left"
+                size={16}
+                color={colors.foreground}
+              />
               <Text style={[styles.modeBtnText, { color: colors.foreground }]}>
                 Undo
               </Text>
@@ -2096,9 +2270,16 @@ export default function MapScreen() {
                 },
               ]}
             >
-              <Feather name="check" size={16} color={colors.primaryForeground} />
+              <Feather
+                name="check"
+                size={16}
+                color={colors.primaryForeground}
+              />
               <Text
-                style={[styles.modeBtnText, { color: colors.primaryForeground }]}
+                style={[
+                  styles.modeBtnText,
+                  { color: colors.primaryForeground },
+                ]}
               >
                 Save
               </Text>
@@ -2138,7 +2319,10 @@ export default function MapScreen() {
               <View style={styles.modeStatsRow}>
                 <View style={styles.modeStat}>
                   <Text
-                    style={[styles.coordsLabel, { color: colors.mutedForeground }]}
+                    style={[
+                      styles.coordsLabel,
+                      { color: colors.mutedForeground },
+                    ]}
                   >
                     Remaining
                   </Text>
@@ -2153,7 +2337,10 @@ export default function MapScreen() {
                 </View>
                 <View style={styles.modeStat}>
                   <Text
-                    style={[styles.coordsLabel, { color: colors.mutedForeground }]}
+                    style={[
+                      styles.coordsLabel,
+                      { color: colors.mutedForeground },
+                    ]}
                   >
                     Off route
                   </Text>
@@ -2169,12 +2356,18 @@ export default function MapScreen() {
                       },
                     ]}
                   >
-                    {formatDistance(followProgress.offRouteMeters, settings.units)}
+                    {formatDistance(
+                      followProgress.offRouteMeters,
+                      settings.units,
+                    )}
                   </Text>
                 </View>
                 <View style={styles.modeStat}>
                   <Text
-                    style={[styles.coordsLabel, { color: colors.mutedForeground }]}
+                    style={[
+                      styles.coordsLabel,
+                      { color: colors.mutedForeground },
+                    ]}
                   >
                     Climb left
                   </Text>
@@ -2191,7 +2384,10 @@ export default function MapScreen() {
                 </View>
                 <View style={styles.modeStat}>
                   <Text
-                    style={[styles.coordsLabel, { color: colors.mutedForeground }]}
+                    style={[
+                      styles.coordsLabel,
+                      { color: colors.mutedForeground },
+                    ]}
                   >
                     Next summit
                   </Text>
@@ -2228,7 +2424,10 @@ export default function MapScreen() {
               )}
               <View style={{ gap: 6 }}>
                 <Text
-                  style={[styles.coordsLabel, { color: colors.mutedForeground }]}
+                  style={[
+                    styles.coordsLabel,
+                    { color: colors.mutedForeground },
+                  ]}
                 >
                   Elevation ahead
                 </Text>
@@ -2354,17 +2553,14 @@ export default function MapScreen() {
                 }
               }}
               style={({ pressed }) => {
-                const active = settings.offRouteVoice && settings.offRouteAlerts;
+                const active =
+                  settings.offRouteVoice && settings.offRouteAlerts;
                 return [
                   styles.modeBtn,
                   {
                     borderColor: active ? colors.primary : colors.border,
                     backgroundColor: active ? colors.primary : "transparent",
-                    opacity: !settings.offRouteAlerts
-                      ? 0.4
-                      : pressed
-                        ? 0.7
-                        : 1,
+                    opacity: !settings.offRouteAlerts ? 0.4 : pressed ? 0.7 : 1,
                   },
                 ];
               }}
@@ -2472,9 +2668,11 @@ export default function MapScreen() {
           ]}
         >
           <View style={styles.recordDot} />
-          <Text style={[styles.recordText, { color: colors.primaryForeground }]}>
-            REC · {formatDistance(recording.liveDistanceMeters, settings.units)} ·{" "}
-            {formatDuration(recording.liveDurationMs)}
+          <Text
+            style={[styles.recordText, { color: colors.primaryForeground }]}
+          >
+            REC · {formatDistance(recording.liveDistanceMeters, settings.units)}{" "}
+            · {formatDuration(recording.liveDurationMs)}
           </Text>
         </View>
       )}
@@ -2501,7 +2699,9 @@ export default function MapScreen() {
             {me.latitude.toFixed(5)}°, {me.longitude.toFixed(5)}°
           </Text>
           {me.accuracy ? (
-            <Text style={[styles.coordsLabel, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.coordsLabel, { color: colors.mutedForeground }]}
+            >
               ±{Math.round(me.accuracy)}m
             </Text>
           ) : null}
@@ -2599,7 +2799,9 @@ export default function MapScreen() {
               </View>
               {plotShareEnabled && (
                 <>
-                  <Text style={[styles.label, { color: colors.mutedForeground }]}>
+                  <Text
+                    style={[styles.label, { color: colors.mutedForeground }]}
+                  >
                     Your name (optional)
                   </Text>
                   <TextInput
@@ -2629,7 +2831,10 @@ export default function MapScreen() {
           >
             <Feather name="check" size={18} color={colors.primaryForeground} />
             <Text
-              style={[styles.primaryBtnText, { color: colors.primaryForeground }]}
+              style={[
+                styles.primaryBtnText,
+                { color: colors.primaryForeground },
+              ]}
             >
               {editTrackId
                 ? "Update route"
@@ -2837,7 +3042,10 @@ export default function MapScreen() {
                 {datasetElevLoading
                   ? "Loading…"
                   : datasetHasElevation
-                    ? formatElevation(datasetElevStats.gainMeters, settings.units)
+                    ? formatElevation(
+                        datasetElevStats.gainMeters,
+                        settings.units,
+                      )
                     : "—"}
               </Text>
             </View>
@@ -2849,7 +3057,10 @@ export default function MapScreen() {
                 {datasetElevLoading
                   ? "Loading…"
                   : datasetHasElevation
-                    ? formatElevation(datasetElevStats.lossMeters, settings.units)
+                    ? formatElevation(
+                        datasetElevStats.lossMeters,
+                        settings.units,
+                      )
                     : "—"}
               </Text>
             </View>
@@ -2883,7 +3094,8 @@ export default function MapScreen() {
                 </Text>
                 {datasetWaypoints.map((f, i) => {
                   const props = f.properties ?? {};
-                  const name = (props["name"] as string | undefined) || "Waypoint";
+                  const name =
+                    (props["name"] as string | undefined) || "Waypoint";
                   const notes = props["notes"] as string | undefined;
                   const photoUrl = props["photoUrl"] as string | undefined;
                   return (
@@ -2891,7 +3103,10 @@ export default function MapScreen() {
                       key={i}
                       style={[
                         styles.waypointRow,
-                        { borderColor: colors.border, backgroundColor: colors.muted },
+                        {
+                          borderColor: colors.border,
+                          backgroundColor: colors.muted,
+                        },
                       ]}
                     >
                       {photoUrl ? (
@@ -2903,22 +3118,40 @@ export default function MapScreen() {
                         <View
                           style={[
                             styles.waypointThumb,
-                            { backgroundColor: colors.border, alignItems: "center", justifyContent: "center" },
+                            {
+                              backgroundColor: colors.border,
+                              alignItems: "center",
+                              justifyContent: "center",
+                            },
                           ]}
                         >
-                          <Feather name="map-pin" size={18} color={colors.mutedForeground} />
+                          <Feather
+                            name="map-pin"
+                            size={18}
+                            color={colors.mutedForeground}
+                          />
                         </View>
                       )}
                       <View style={{ flex: 1 }}>
                         <Text
-                          style={[styles.coordsValue, { color: colors.foreground, fontSize: 13 }]}
+                          style={[
+                            styles.coordsValue,
+                            { color: colors.foreground, fontSize: 13 },
+                          ]}
                           numberOfLines={1}
                         >
                           {name}
                         </Text>
                         {notes ? (
                           <Text
-                            style={[styles.label, { color: colors.mutedForeground, fontSize: 12, marginTop: 2 }]}
+                            style={[
+                              styles.label,
+                              {
+                                color: colors.mutedForeground,
+                                fontSize: 12,
+                                marginTop: 2,
+                              },
+                            ]}
                             numberOfLines={2}
                           >
                             {notes}
@@ -2981,7 +3214,10 @@ export default function MapScreen() {
           <View style={{ gap: 12 }}>
             {trackTapSheet.length > 1 && (
               <Text
-                style={[styles.label, { color: colors.mutedForeground, textAlign: "center" }]}
+                style={[
+                  styles.label,
+                  { color: colors.mutedForeground, textAlign: "center" },
+                ]}
               >
                 Swipe to browse · tap Follow to navigate
               </Text>
@@ -3002,9 +3238,8 @@ export default function MapScreen() {
               }}
             >
               {trackTapSheet.map((t, idx) => {
-                const distM = t.points.length >= 2
-                  ? pathLengthMeters(t.points)
-                  : null;
+                const distM =
+                  t.points.length >= 2 ? pathLengthMeters(t.points) : null;
                 const dur = t.durationMs > 0 ? t.durationMs : null;
                 const cardWidth = Dimensions.get("window").width - 48;
                 return (
@@ -3016,8 +3251,7 @@ export default function MapScreen() {
                         width: cardWidth,
                         backgroundColor: colors.card,
                         borderColor: colors.border,
-                        marginRight:
-                          idx < trackTapSheet.length - 1 ? 8 : 0,
+                        marginRight: idx < trackTapSheet.length - 1 ? 8 : 0,
                       },
                     ]}
                   >
@@ -3099,7 +3333,10 @@ export default function MapScreen() {
                           setPlotMode(false);
                           setFollowTrack(t);
                           if (!tracking) setTracking(true);
-                          let w = Infinity, s = Infinity, e2 = -Infinity, n = -Infinity;
+                          let w = Infinity,
+                            s = Infinity,
+                            e2 = -Infinity,
+                            n = -Infinity;
                           for (const p of t.points) {
                             if (p.lng < w) w = p.lng;
                             if (p.lat < s) s = p.lat;
@@ -3245,7 +3482,10 @@ export default function MapScreen() {
                   <Text
                     style={[
                       styles.label,
-                      { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
                     ]}
                   >
                     Publish to community map
@@ -3277,9 +3517,16 @@ export default function MapScreen() {
                 },
               ]}
             >
-              <Feather name="check" size={18} color={colors.primaryForeground} />
+              <Feather
+                name="check"
+                size={18}
+                color={colors.primaryForeground}
+              />
               <Text
-                style={[styles.primaryBtnText, { color: colors.primaryForeground }]}
+                style={[
+                  styles.primaryBtnText,
+                  { color: colors.primaryForeground },
+                ]}
               >
                 Save waypoint
               </Text>
@@ -3298,7 +3545,9 @@ export default function MapScreen() {
       >
         <View style={{ gap: 14 }}>
           {downloadProgress ? (
-            <View style={{ alignItems: "center", paddingVertical: 24, gap: 14 }}>
+            <View
+              style={{ alignItems: "center", paddingVertical: 24, gap: 14 }}
+            >
               <ActivityIndicator color={colors.primary} size="large" />
               <Text style={[styles.coordsValue, { color: colors.foreground }]}>
                 {downloadProgress.done} / {downloadProgress.total} tiles
@@ -3628,7 +3877,12 @@ const styles = StyleSheet.create({
     padding: 8,
     gap: 7,
   },
-  liveMessageText: { flex: 1, fontFamily: "Inter_400Regular", fontSize: 12, lineHeight: 17 },
+  liveMessageText: {
+    flex: 1,
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    lineHeight: 17,
+  },
   liveLinkAction: {
     flexDirection: "row",
     alignItems: "center",
@@ -3651,7 +3905,12 @@ const styles = StyleSheet.create({
   },
   liveRetryActionText: { fontFamily: "Inter_600SemiBold", fontSize: 11 },
   liveQuickReplies: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  liveQuickReply: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5 },
+  liveQuickReply: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
   liveQuickReplyText: { fontFamily: "Inter_500Medium", fontSize: 10 },
   liveReplyRow: { flexDirection: "row", gap: 7, alignItems: "center" },
   liveReplyInput: {
@@ -3663,8 +3922,18 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 12,
   },
-  liveSend: { width: 33, height: 33, borderRadius: 9, alignItems: "center", justifyContent: "center" },
-  liveStopText: { fontFamily: "Inter_600SemiBold", fontSize: 11, textAlign: "center" },
+  liveSend: {
+    width: 33,
+    height: 33,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  liveStopText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    textAlign: "center",
+  },
   liveShareSheet: { gap: 10, paddingBottom: 4 },
   liveNotice: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19 },
   modePanelHeader: {

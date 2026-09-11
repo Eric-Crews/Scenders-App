@@ -1,16 +1,13 @@
 import { Platform } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
 
-import {
-  ALL_LAYERS,
-  type LayerConfig,
-  resolveTileUrl,
-} from "./mapLayers";
+import { ALL_LAYERS, type LayerConfig, resolveTileUrl } from "./mapLayers";
 
 const IS_WEB = Platform.OS === "web";
 const TILE_DIR = IS_WEB
   ? ""
-  : (FileSystem.documentDirectory ?? FileSystem.cacheDirectory ?? "") + "tiles/";
+  : (FileSystem.documentDirectory ?? FileSystem.cacheDirectory ?? "") +
+    "tiles/";
 
 export type TileCoord = { z: number; x: number; y: number };
 
@@ -106,7 +103,7 @@ export async function downloadTile(
     resolveTileUrl(config, t.z, t.x, t.y),
     dest,
     {
-      headers: { "User-Agent": "mapper.one/1.0 (+https://mapper.one)" },
+      headers: { "User-Agent": "ScendersRide/1.0 (+https://scenders.com)" },
     },
   );
   return result.uri;

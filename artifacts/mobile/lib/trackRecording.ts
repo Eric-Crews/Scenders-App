@@ -85,7 +85,9 @@ export function formatDuration(ms: number): string {
  * suitable for publishing through the community datasets pipeline. Coordinates
  * are emitted in GeoJSON order ([lng, lat]).
  */
-export function trackToFeatureCollection(track: Track): GeoJSONFeatureCollection {
+export function trackToFeatureCollection(
+  track: Track,
+): GeoJSONFeatureCollection {
   const coordinates = track.points.map(
     (p) => [p.lng, p.lat] as [number, number],
   );
@@ -103,7 +105,7 @@ export function trackToFeatureCollection(track: Track): GeoJSONFeatureCollection
           startedAt: new Date(track.startedAt).toISOString(),
           endedAt: new Date(track.endedAt).toISOString(),
           color: track.color,
-          source: "mapper.one/track",
+          source: "scenders.ride/track",
         },
       },
     ],

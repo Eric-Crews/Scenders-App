@@ -79,7 +79,10 @@ export default function WaypointsScreen() {
       <View style={{ flex: 1 }}>
         <View style={styles.titleRow}>
           <Text
-            style={[styles.cardTitle, { color: colors.foreground, flexShrink: 1 }]}
+            style={[
+              styles.cardTitle,
+              { color: colors.foreground, flexShrink: 1 },
+            ]}
             numberOfLines={1}
           >
             {item.name}
@@ -89,7 +92,9 @@ export default function WaypointsScreen() {
               style={[styles.trackBadge, { backgroundColor: colors.secondary }]}
             >
               <Feather name="activity" size={10} color={colors.foreground} />
-              <Text style={[styles.trackBadgeText, { color: colors.foreground }]}>
+              <Text
+                style={[styles.trackBadgeText, { color: colors.foreground }]}
+              >
                 track
               </Text>
             </View>
@@ -130,16 +135,13 @@ export default function WaypointsScreen() {
       >
         <View>
           <Text style={[styles.kicker, { color: colors.mutedForeground }]}>
-            mapper.one
+            SCENDERS
           </Text>
-          <Text style={[styles.h1, { color: colors.foreground }]}>Waypoints</Text>
+          <Text style={[styles.h1, { color: colors.foreground }]}>
+            Waypoints
+          </Text>
         </View>
-        <View
-          style={[
-            styles.countPill,
-            { backgroundColor: colors.secondary },
-          ]}
-        >
+        <View style={[styles.countPill, { backgroundColor: colors.secondary }]}>
           <Text style={[styles.countText, { color: colors.foreground }]}>
             {waypoints.length}
           </Text>
@@ -177,7 +179,10 @@ export default function WaypointsScreen() {
             >
               <Feather name="map" size={16} color={colors.primaryForeground} />
               <Text
-                style={[styles.emptyBtnText, { color: colors.primaryForeground }]}
+                style={[
+                  styles.emptyBtnText,
+                  { color: colors.primaryForeground },
+                ]}
               >
                 Open map
               </Text>
@@ -202,7 +207,10 @@ export default function WaypointsScreen() {
             {selected.photoUri ? (
               <Pressable
                 onPress={() => setFullscreen(true)}
-                style={[styles.detailPhotoWrap, { backgroundColor: colors.muted }]}
+                style={[
+                  styles.detailPhotoWrap,
+                  { backgroundColor: colors.muted },
+                ]}
               >
                 <Image
                   source={{ uri: selected.photoUri }}
@@ -224,15 +232,24 @@ export default function WaypointsScreen() {
             ) : null}
 
             <View style={styles.detailRow}>
-              <Feather name="map-pin" size={16} color={colors.mutedForeground} />
+              <Feather
+                name="map-pin"
+                size={16}
+                color={colors.mutedForeground}
+              />
               <Text style={[styles.detailText, { color: colors.foreground }]}>
-                {selected.latitude.toFixed(5)}°, {selected.longitude.toFixed(5)}°
+                {selected.latitude.toFixed(5)}°, {selected.longitude.toFixed(5)}
+                °
               </Text>
             </View>
 
             {selected.trackId ? (
               <View style={styles.detailRow}>
-                <Feather name="activity" size={16} color={colors.mutedForeground} />
+                <Feather
+                  name="activity"
+                  size={16}
+                  color={colors.mutedForeground}
+                />
                 <Text style={[styles.detailText, { color: colors.foreground }]}>
                   Recorded on a track
                 </Text>
@@ -253,12 +270,18 @@ export default function WaypointsScreen() {
               }}
               style={({ pressed }) => [
                 styles.detailBtn,
-                { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
+                {
+                  backgroundColor: colors.primary,
+                  opacity: pressed ? 0.85 : 1,
+                },
               ]}
             >
               <Feather name="map" size={16} color={colors.primaryForeground} />
               <Text
-                style={[styles.detailBtnText, { color: colors.primaryForeground }]}
+                style={[
+                  styles.detailBtnText,
+                  { color: colors.primaryForeground },
+                ]}
               >
                 Show on map
               </Text>

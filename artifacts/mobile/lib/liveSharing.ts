@@ -161,15 +161,19 @@ export async function loadLiveSession(): Promise<LiveSession | null> {
     // Move capabilities saved by the earlier session format into secure storage
     // the next time that session is opened.
     const ownerCapability = secureCapability ?? parsed.ownerCapability;
-    const pendingMessages = (parsed.pendingMessages ?? []).flatMap((message, index) => {
-      if (typeof message === "string") {
-        return [{
-          id: `legacy-message-${parsed.id}-${index}`,
-          body: message,
-        }];
-      }
-      return message?.id && typeof message.body === "string" ? [message] : [];
-    });
+    const pendingMessages = (parsed.pendingMessages ?? []).flatMap(
+      (message, index) => {
+        if (typeof message === "string") {
+          return [
+            {
+              id: `legacy-message-${parsed.id}-${index}`,
+              body: message,
+            },
+          ];
+        }
+        return message?.id && typeof message.body === "string" ? [message] : [];
+      },
+    );
     const session: LiveSession = {
       ...parsed,
       ...(ownerCapability ? { ownerCapability } : {}),
@@ -191,7 +195,9 @@ export async function loadLiveSession(): Promise<LiveSession | null> {
   }
 }
 
-export async function saveLiveSession(session: LiveSession | null): Promise<void> {
+export async function saveLiveSession(
+  session: LiveSession | null,
+): Promise<void> {
   if (session) {
     // The owner secret is a bearer credential and must not be written to
     // ordinary app storage. Viewer-link data is also memory-only.
@@ -204,8 +210,7 @@ export async function saveLiveSession(session: LiveSession | null): Promise<void
         ? ownerCapabilityStore.set(session.ownerCapability)
         : ownerCapabilityStore.clear(),
     ]);
-  }
-  else {
+  } else {
     await Promise.all([
       AsyncStorage.removeItem(SESSION_KEY),
       ownerCapabilityStore.clear(),
@@ -219,14 +224,18 @@ export async function createLiveSession(input: {
   followedRoute: LiveFollowedRoute | null;
 }): Promise<LiveSession> {
   if (Platform.OS === "web") {
-    throw new Error("Live sharing is available in the FieldMaps mobile app.");
+    throw new Error(
+      "Live sharing is available in the Scenders Ride mobile app.",
+    );
   }
   const remote = await anonymousFetch<RemoteActivity>("/live-activities", {
     method: "POST",
     jsonBody: input,
   });
   if (!remote.ownerCapability) {
-    throw new Error("Live sharing setup did not return a recording-device capability.");
+    throw new Error(
+      "Live sharing setup did not return a recording-device capability.",
+    );
   }
   const initial: LiveSession = {
     id: remote.id,
@@ -303,7 +312,8 @@ async function uploadWaypointPhoto(
   sessionId: string,
   uri: string,
 ): Promise<string> {
-  if (Platform.OS === "web") throw new Error("Photo upload is not supported on web.");
+  if (Platform.OS === "web")
+    throw new Error("Photo upload is not supported on web.");
   const info = await FileSystem.getInfoAsync(uri);
   if (!info.exists) throw new Error("Waypoint photo is missing.");
   const contentType = contentTypeForPhoto(uri);
@@ -337,7 +347,10 @@ export function enqueueLiveMessage(
     ...session,
     pendingMessages: [
       ...session.pendingMessages,
-      { id: `message-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`, body },
+      {
+        id: `message-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`,
+        body,
+      },
     ],
   };
 }
@@ -362,9 +375,12 @@ export async function syncLiveSession(
       : authedFetch<T>(path, init);
   try {
     if (next.pendingRevoke) {
-      await ownerFetch<void>(`/me/live-activities/${encodeURIComponent(next.id)}/revoke`, {
-        method: "POST",
-      });
+      await ownerFetch<void>(
+        `/me/live-activities/${encodeURIComponent(next.id)}/revoke`,
+        {
+          method: "POST",
+        },
+      );
       return null;
     }
 
@@ -383,7 +399,11 @@ export async function syncLiveSession(
     while (next.pendingWaypoints.length) {
       let waypoint = next.pendingWaypoints[0];
       if (waypoint.photoUri && !waypoint.photoPath) {
-        const photoPath = await uploadWaypointPhoto(ownerFetch, next.id, waypoint.photoUri);
+        const photoPath = await uploadWaypointPhoto(
+          ownerFetch,
+          next.id,
+          waypoint.photoUri,
+        );
         waypoint = { ...waypoint, photoPath };
         next = {
           ...next,

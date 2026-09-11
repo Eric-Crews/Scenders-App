@@ -31,13 +31,15 @@ type LinkRowProps = {
   label: string;
   sub?: string;
   href?: string;
+  onPress?: () => void;
 };
 
 export default function AboutScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, isLoading, isAuthenticated, login, logout, deleteAccount } = useAuth();
+  const { user, isLoading, isAuthenticated, login, logout, deleteAccount } =
+    useAuth();
   const { syncStatus, settings, updateSettings } = useMaps();
   const [deletingAccount, setDeletingAccount] = React.useState(false);
   const [donationAmount, setDonationAmount] = React.useState("5");
@@ -91,7 +93,10 @@ export default function AboutScreen() {
             setDeletingAccount(true);
             try {
               await deleteAccount();
-              Alert.alert("Account deleted", "Your account and cloud-synced data have been deleted.");
+              Alert.alert(
+                "Account deleted",
+                "Your account and cloud-synced data have been deleted.",
+              );
             } catch (error) {
               Alert.alert(
                 "Couldn’t delete account",
@@ -106,22 +111,20 @@ export default function AboutScreen() {
     );
   };
 
-  const LinkRow = ({ icon, label, sub, href }: LinkRowProps) => (
+  const LinkRow = ({ icon, label, sub, href, onPress }: LinkRowProps) => (
     <Pressable
-      onPress={() => open(href)}
-      disabled={!href}
+      onPress={() => (onPress ? onPress() : open(href))}
+      disabled={!href && !onPress}
       style={({ pressed }) => [
         styles.linkRow,
         {
           backgroundColor: colors.card,
           borderColor: colors.border,
-          opacity: pressed && href ? 0.85 : 1,
+          opacity: pressed && (href || onPress) ? 0.85 : 1,
         },
       ]}
     >
-      <View
-        style={[styles.linkIcon, { backgroundColor: colors.muted }]}
-      >
+      <View style={[styles.linkIcon, { backgroundColor: colors.muted }]}>
         <Feather name={icon} size={18} color={colors.primary} />
       </View>
       <View style={{ flex: 1 }}>
@@ -135,7 +138,17 @@ export default function AboutScreen() {
         ) : null}
       </View>
       {href ? (
-        <Feather name="external-link" size={16} color={colors.mutedForeground} />
+        <Feather
+          name="external-link"
+          size={16}
+          color={colors.mutedForeground}
+        />
+      ) : onPress ? (
+        <Feather
+          name="chevron-right"
+          size={18}
+          color={colors.mutedForeground}
+        />
       ) : null}
     </Pressable>
   );
@@ -154,13 +167,11 @@ export default function AboutScreen() {
       >
         <View style={styles.header}>
           <Text style={[styles.kicker, { color: colors.mutedForeground }]}>
-            mapper.one
+            SCENDERS
           </Text>
-          <Text style={[styles.h1, { color: colors.foreground }]}>
-            About
-          </Text>
+          <Text style={[styles.h1, { color: colors.foreground }]}>More</Text>
           <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
-            Open-source community map software for the wild places.
+            Route tools for mountain-bike and gravel days.
           </Text>
         </View>
 
@@ -173,51 +184,55 @@ export default function AboutScreen() {
           <View style={styles.accountHeader}>
             <Feather name="heart" size={18} color={colors.primary} />
             <Text style={[styles.accountTitle, { color: colors.foreground }]}>
-              Keep mapper.one free
+              Keep Scenders Ride moving
             </Text>
           </View>
           <Text style={[styles.accountBody, { color: colors.mutedForeground }]}>
-            One-time contributions help support the open, offline-first mapping
-            app. Secure payment is handled by Stripe in your browser.
+            One-time contributions help support free, offline-first route tools.
+            Secure payment is handled by Stripe in your browser.
           </Text>
           <View style={styles.donationPresets}>
             {DONATION_PRESETS.map((amount) => {
               const isSelected = Number(donationAmount) === amount;
               return (
-              <Pressable
-                key={amount}
-                testID={`donation-preset-${amount}`}
-                onPress={() => {
-                  setDonationAmount(String(amount));
-                  setDonationError(null);
-                }}
-                style={({ pressed }) => [
-                  styles.donationPreset,
-                  {
-                    backgroundColor: isSelected ? colors.primary : colors.muted,
-                    borderColor: isSelected ? colors.primary : colors.border,
-                    opacity: pressed ? 0.8 : 1,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.donationPresetText,
+                <Pressable
+                  key={amount}
+                  testID={`donation-preset-${amount}`}
+                  onPress={() => {
+                    setDonationAmount(String(amount));
+                    setDonationError(null);
+                  }}
+                  style={({ pressed }) => [
+                    styles.donationPreset,
                     {
-                      color: isSelected
-                        ? colors.primaryForeground
-                        : colors.primary,
+                      backgroundColor: isSelected
+                        ? colors.primary
+                        : colors.muted,
+                      borderColor: isSelected ? colors.primary : colors.border,
+                      opacity: pressed ? 0.8 : 1,
                     },
                   ]}
                 >
-                  ${amount}
-                </Text>
-              </Pressable>
+                  <Text
+                    style={[
+                      styles.donationPresetText,
+                      {
+                        color: isSelected
+                          ? colors.primaryForeground
+                          : colors.primary,
+                      },
+                    ]}
+                  >
+                    ${amount}
+                  </Text>
+                </Pressable>
               );
             })}
           </View>
           <View style={styles.donationAmountRow}>
-            <Text style={[styles.donationDollar, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.donationDollar, { color: colors.mutedForeground }]}
+            >
               $
             </Text>
             <TextInput
@@ -260,7 +275,11 @@ export default function AboutScreen() {
               <ActivityIndicator color={colors.primaryForeground} />
             ) : (
               <>
-                <Feather name="heart" size={16} color={colors.primaryForeground} />
+                <Feather
+                  name="heart"
+                  size={16}
+                  color={colors.primaryForeground}
+                />
                 <Text
                   style={[
                     styles.donationCheckoutText,
@@ -302,11 +321,23 @@ export default function AboutScreen() {
                 onPress={() => router.push("/projects")}
                 style={({ pressed }) => [
                   styles.linkBtn,
-                  { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 },
+                  {
+                    backgroundColor: colors.primary,
+                    opacity: pressed ? 0.8 : 1,
+                  },
                 ]}
               >
-                <Feather name="map-pin" size={16} color={colors.primaryForeground} />
-                <Text style={[styles.linkBtnText, { color: colors.primaryForeground }]}>
+                <Feather
+                  name="map-pin"
+                  size={16}
+                  color={colors.primaryForeground}
+                />
+                <Text
+                  style={[
+                    styles.linkBtnText,
+                    { color: colors.primaryForeground },
+                  ]}
+                >
                   Open projects
                 </Text>
               </Pressable>
@@ -348,7 +379,9 @@ export default function AboutScreen() {
                 ]}
               >
                 <Feather name="trash-2" size={16} color={colors.destructive} />
-                <Text style={[styles.linkBtnText, { color: colors.destructive }]}>
+                <Text
+                  style={[styles.linkBtnText, { color: colors.destructive }]}
+                >
                   {deletingAccount ? "Deleting account…" : "Delete account"}
                 </Text>
               </Pressable>
@@ -458,21 +491,16 @@ export default function AboutScreen() {
           </View>
         </View>
 
-        <View
-          style={[
-            styles.heroCard,
-            { backgroundColor: colors.primary },
-          ]}
-        >
+        <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
           <Feather name="compass" size={28} color={colors.primaryForeground} />
           <Text style={[styles.heroTitle, { color: colors.primaryForeground }]}>
             Standing on the shoulders of giants
           </Text>
           <Text style={[styles.heroBody, { color: colors.primaryForeground }]}>
             Every trail we follow was first cut by someone else. Every map we
-            read was first drawn by hand. mapper.one exists because of the
-            cartographers, surveyors, trailblazers, and open-data communities
-            who came before — and we&rsquo;re grateful for all of them.
+            read was first drawn by hand. Scenders Ride exists because of the
+            riders, trail builders, cartographers, and open-data communities who
+            came before — and we&rsquo;re grateful for all of them.
           </Text>
         </View>
 
@@ -486,13 +514,13 @@ export default function AboutScreen() {
           ]}
         >
           <Text style={[styles.creditTitle, { color: colors.foreground }]}>
-            The team behind AdvCollective
+            The team behind The Adventure Collective
           </Text>
           <Text style={[styles.creditBody, { color: colors.mutedForeground }]}>
-            We&rsquo;re explorers of wild places — backcountry trails, alpine
-            ridges, slot canyons, and quiet rivers. We made mapper.one because
-            we wanted a maps app that&rsquo;s ours: open, offline-first, and
-            built for the people who actually go out there.
+            We&rsquo;re riders and explorers of wild places — singletrack,
+            gravel, alpine ridges, and quiet roads. We made Scenders Ride to put
+            practical route tools in the hands of people who actually go out
+            there.
           </Text>
           <Pressable
             onPress={() => open("https://advcollective.com")}
@@ -506,7 +534,7 @@ export default function AboutScreen() {
           >
             <Feather name="globe" size={16} color={colors.primary} />
             <Text style={[styles.linkBtnText, { color: colors.primary }]}>
-              advcollective.com
+              TheAdventureCollective.com
             </Text>
           </Pressable>
         </View>
@@ -526,8 +554,8 @@ export default function AboutScreen() {
               Built for the field
             </Text>
             <Text style={[styles.valueBody, { color: colors.mutedForeground }]}>
-              Clear, practical mapping tools for carrying routes, waypoints,
-              and field notes into the places where work happens.
+              Clear, practical mapping tools for carrying routes, waypoints, and
+              field notes into the places where work happens.
             </Text>
           </View>
           <View
@@ -556,8 +584,8 @@ export default function AboutScreen() {
               Offline by default
             </Text>
             <Text style={[styles.valueBody, { color: colors.mutedForeground }]}>
-              Save a region before you leave the trailhead. Your phone keeps
-              the map even when the cell tower can&rsquo;t.
+              Save a region before you leave the trailhead. Your phone keeps the
+              map even when the cell tower can&rsquo;t.
             </Text>
           </View>
           <View
@@ -594,6 +622,12 @@ export default function AboutScreen() {
           Get involved
         </Text>
         <View style={{ gap: 10 }}>
+          <LinkRow
+            icon="map-pin"
+            label="Waypoints"
+            sub="Save field notes and places along the route"
+            onPress={() => router.push("/(tabs)/waypoints")}
+          />
           <Pressable
             onPress={() => router.push("/discussions")}
             style={({ pressed }) => [
@@ -631,7 +665,7 @@ export default function AboutScreen() {
         </View>
 
         <Text style={[styles.footer, { color: colors.mutedForeground }]}>
-          mapper.one · Map the places where you work.{"\n"}
+          Scenders Ride · Find the line worth riding.{"\n"}
           Part of The Adventure Collective.
         </Text>
       </KeyboardAwareScrollViewCompat>
@@ -750,7 +784,11 @@ const styles = StyleSheet.create({
     paddingRight: 14,
     paddingVertical: 12,
   },
-  donationError: { fontFamily: "Inter_500Medium", fontSize: 12, lineHeight: 17 },
+  donationError: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    lineHeight: 17,
+  },
   donationCheckoutButton: {
     alignItems: "center",
     borderRadius: 999,

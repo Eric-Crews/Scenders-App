@@ -6,7 +6,13 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 
 import { useColors } from "@/hooks/useColors";
@@ -41,7 +47,10 @@ type Props = {
   waypoints: Waypoint[];
   tracks: Track[];
   liveTrack: TrackPoint[];
-  liveFollowedRoute?: { name: string; points: Array<{ lat: number; lng: number }> } | null;
+  liveFollowedRoute?: {
+    name: string;
+    points: Array<{ lat: number; lng: number }>;
+  } | null;
   offlineManifest: OfflineManifest;
   onlineEnabled: boolean;
   baseLayer: BaseLayerId;
@@ -65,262 +74,271 @@ type Props = {
   onReady?: () => void;
 };
 
-const MapViewComponent = forwardRef<MapViewHandle, Props>(function MapViewComponent(
-  {
-    datasets,
-    waypoints,
-    tracks,
-    liveTrack,
-    liveFollowedRoute,
-    offlineManifest,
-    onlineEnabled,
-    baseLayer,
-    overlays,
-    plotMode = false,
-    plotPoints,
-    plotSelectedIndex,
-    onPlotTap,
-    onPlotMove,
-    onPlotInsert,
-    onPlotVertexTap,
-    onLongPress,
-    onDatasetTap,
-    onTrackTap,
-    onView,
-    onReady,
-  },
-  ref,
-) {
-  const colors = useColors();
-  const webRef = useRef<WebView>(null);
-  const [html, setHtml] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
+const MapViewComponent = forwardRef<MapViewHandle, Props>(
+  function MapViewComponent(
+    {
+      datasets,
+      waypoints,
+      tracks,
+      liveTrack,
+      liveFollowedRoute,
+      offlineManifest,
+      onlineEnabled,
+      baseLayer,
+      overlays,
+      plotMode = false,
+      plotPoints,
+      plotSelectedIndex,
+      onPlotTap,
+      onPlotMove,
+      onPlotInsert,
+      onPlotVertexTap,
+      onLongPress,
+      onDatasetTap,
+      onTrackTap,
+      onView,
+      onReady,
+    },
+    ref,
+  ) {
+    const colors = useColors();
+    const webRef = useRef<WebView>(null);
+    const [html, setHtml] = useState<string | null>(null);
+    const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
-    getLeafletHtml().then((h) => {
-      if (mounted) setHtml(h);
-    });
-    return () => {
-      mounted = false;
+    useEffect(() => {
+      let mounted = true;
+      getLeafletHtml().then((h) => {
+        if (mounted) setHtml(h);
+      });
+      return () => {
+        mounted = false;
+      };
+    }, []);
+
+    const inject = (script: string) => {
+      webRef.current?.injectJavaScript(script + "; true;");
     };
-  }, []);
 
-  const inject = (script: string) => {
-    webRef.current?.injectJavaScript(script + "; true;");
-  };
-
-  useImperativeHandle(ref, () => ({
-    setMe: (loc) => inject(`window.FM && FM.setMe(${JSON.stringify(loc)})`),
-    setLiveTrack: (pts) =>
-      inject(`window.FM && FM.setLiveTrack(${JSON.stringify(pts)})`),
-    setLiveFollowedRoute: (route) =>
-      inject(`window.FM && FM.setLiveFollowedRoute(${JSON.stringify(route)})`),
-    setElevationMarker: (loc) =>
-      inject(`window.FM && FM.setElevationMarker(${JSON.stringify(loc)})`),
-    setClimbHighlight: (path) =>
-      inject(`window.FM && FM.setClimbHighlight(${JSON.stringify(path)})`),
-    flyTo: (lat, lng, zoom) =>
-      inject(`window.FM && FM.flyTo(${lat}, ${lng}, ${zoom ?? "null"})`),
-    fitBounds: (b) =>
-      inject(`window.FM && FM.fitBounds(${JSON.stringify(b)})`),
-    setOnlineEnabled: (v) =>
-      inject(`window.FM && FM.setOnlineEnabled(${v ? "true" : "false"})`),
-    setOfflineTiles: (m) =>
-      inject(`window.FM && FM.setOfflineTiles(${JSON.stringify(m)})`),
-    setActiveBase: (id) =>
-      inject(`window.FM && FM.setActiveBase(${JSON.stringify(id)})`),
-    setActiveOverlays: (ids) =>
-      inject(`window.FM && FM.setActiveOverlays(${JSON.stringify(ids)})`),
-    invalidate: () => inject(`window.FM && FM.invalidate()`),
-    highlightTrack: (id) =>
-      inject(`window.FM && FM.highlightTrack(${JSON.stringify(id)})`),
-  }));
-
-  // Push datasets / waypoints when they change
-  useEffect(() => {
-    if (!ready) return;
-    const safe = datasets.map((d) => ({
-      id: d.id,
-      visible: d.visible,
-      color: d.color,
-      communityKind: d.communityKind ?? null,
-      geojson: d.geojson,
+    useImperativeHandle(ref, () => ({
+      setMe: (loc) => inject(`window.FM && FM.setMe(${JSON.stringify(loc)})`),
+      setLiveTrack: (pts) =>
+        inject(`window.FM && FM.setLiveTrack(${JSON.stringify(pts)})`),
+      setLiveFollowedRoute: (route) =>
+        inject(
+          `window.FM && FM.setLiveFollowedRoute(${JSON.stringify(route)})`,
+        ),
+      setElevationMarker: (loc) =>
+        inject(`window.FM && FM.setElevationMarker(${JSON.stringify(loc)})`),
+      setClimbHighlight: (path) =>
+        inject(`window.FM && FM.setClimbHighlight(${JSON.stringify(path)})`),
+      flyTo: (lat, lng, zoom) =>
+        inject(`window.FM && FM.flyTo(${lat}, ${lng}, ${zoom ?? "null"})`),
+      fitBounds: (b) =>
+        inject(`window.FM && FM.fitBounds(${JSON.stringify(b)})`),
+      setOnlineEnabled: (v) =>
+        inject(`window.FM && FM.setOnlineEnabled(${v ? "true" : "false"})`),
+      setOfflineTiles: (m) =>
+        inject(`window.FM && FM.setOfflineTiles(${JSON.stringify(m)})`),
+      setActiveBase: (id) =>
+        inject(`window.FM && FM.setActiveBase(${JSON.stringify(id)})`),
+      setActiveOverlays: (ids) =>
+        inject(`window.FM && FM.setActiveOverlays(${JSON.stringify(ids)})`),
+      invalidate: () => inject(`window.FM && FM.invalidate()`),
+      highlightTrack: (id) =>
+        inject(`window.FM && FM.highlightTrack(${JSON.stringify(id)})`),
     }));
-    inject(`window.FM && FM.renderDatasets(${JSON.stringify(safe)})`);
-  }, [datasets, ready]);
 
-  useEffect(() => {
-    if (!ready) return;
-    const safe = waypoints.map((w) => ({
-      name: w.name,
-      latitude: w.latitude,
-      longitude: w.longitude,
-      notes: w.notes ?? "",
-    }));
-    inject(`window.FM && FM.renderWaypoints(${JSON.stringify(safe)})`);
-  }, [waypoints, ready]);
+    // Push datasets / waypoints when they change
+    useEffect(() => {
+      if (!ready) return;
+      const safe = datasets.map((d) => ({
+        id: d.id,
+        visible: d.visible,
+        color: d.color,
+        communityKind: d.communityKind ?? null,
+        geojson: d.geojson,
+      }));
+      inject(`window.FM && FM.renderDatasets(${JSON.stringify(safe)})`);
+    }, [datasets, ready]);
 
-  useEffect(() => {
-    if (!ready) return;
-    const safe = tracks.map((t) => ({
-      id: t.id,
-      name: t.name,
-      color: t.color,
-      points: t.points.map((p) => ({ lat: p.lat, lng: p.lng })),
-    }));
-    inject(`window.FM && FM.renderTracks(${JSON.stringify(safe)})`);
-  }, [tracks, ready]);
+    useEffect(() => {
+      if (!ready) return;
+      const safe = waypoints.map((w) => ({
+        name: w.name,
+        latitude: w.latitude,
+        longitude: w.longitude,
+        notes: w.notes ?? "",
+      }));
+      inject(`window.FM && FM.renderWaypoints(${JSON.stringify(safe)})`);
+    }, [waypoints, ready]);
 
-  useEffect(() => {
-    if (!ready) return;
-    const safe = liveTrack.map((p) => ({ lat: p.lat, lng: p.lng }));
-    inject(`window.FM && FM.setLiveTrack(${JSON.stringify(safe)})`);
-  }, [liveTrack, ready]);
+    useEffect(() => {
+      if (!ready) return;
+      const safe = tracks.map((t) => ({
+        id: t.id,
+        name: t.name,
+        color: t.color,
+        points: t.points.map((p) => ({ lat: p.lat, lng: p.lng })),
+      }));
+      inject(`window.FM && FM.renderTracks(${JSON.stringify(safe)})`);
+    }, [tracks, ready]);
 
-  useEffect(() => {
-    if (!ready) return;
-    inject(`window.FM && FM.setLiveFollowedRoute(${JSON.stringify(liveFollowedRoute ?? null)})`);
-  }, [liveFollowedRoute, ready]);
+    useEffect(() => {
+      if (!ready) return;
+      const safe = liveTrack.map((p) => ({ lat: p.lat, lng: p.lng }));
+      inject(`window.FM && FM.setLiveTrack(${JSON.stringify(safe)})`);
+    }, [liveTrack, ready]);
 
-  useEffect(() => {
-    if (!ready) return;
-    inject(
-      `window.FM && FM.setOnlineEnabled(${onlineEnabled ? "true" : "false"})`,
-    );
-  }, [onlineEnabled, ready]);
+    useEffect(() => {
+      if (!ready) return;
+      inject(
+        `window.FM && FM.setLiveFollowedRoute(${JSON.stringify(liveFollowedRoute ?? null)})`,
+      );
+    }, [liveFollowedRoute, ready]);
 
-  useEffect(() => {
-    if (!ready) return;
-    inject(`window.FM && FM.setOfflineTiles(${JSON.stringify(offlineManifest)})`);
-  }, [offlineManifest, ready]);
+    useEffect(() => {
+      if (!ready) return;
+      inject(
+        `window.FM && FM.setOnlineEnabled(${onlineEnabled ? "true" : "false"})`,
+      );
+    }, [onlineEnabled, ready]);
 
-  useEffect(() => {
-    if (!ready) return;
-    inject(`window.FM && FM.setActiveBase(${JSON.stringify(baseLayer)})`);
-  }, [baseLayer, ready]);
+    useEffect(() => {
+      if (!ready) return;
+      inject(
+        `window.FM && FM.setOfflineTiles(${JSON.stringify(offlineManifest)})`,
+      );
+    }, [offlineManifest, ready]);
 
-  useEffect(() => {
-    if (!ready) return;
-    inject(`window.FM && FM.setActiveOverlays(${JSON.stringify(overlays)})`);
-  }, [overlays, ready]);
+    useEffect(() => {
+      if (!ready) return;
+      inject(`window.FM && FM.setActiveBase(${JSON.stringify(baseLayer)})`);
+    }, [baseLayer, ready]);
 
-  useEffect(() => {
-    if (!ready) return;
-    inject(`window.FM && FM.setPlotMode(${plotMode ? "true" : "false"})`);
-  }, [plotMode, ready]);
+    useEffect(() => {
+      if (!ready) return;
+      inject(`window.FM && FM.setActiveOverlays(${JSON.stringify(overlays)})`);
+    }, [overlays, ready]);
 
-  useEffect(() => {
-    if (!ready) return;
-    const safe = (plotPoints ?? []).map((p) => ({ lat: p.lat, lng: p.lng }));
-    const sel = typeof plotSelectedIndex === "number" ? plotSelectedIndex : -1;
-    inject(`window.FM && FM.renderPlot(${JSON.stringify(safe)}, ${sel})`);
-  }, [plotPoints, plotSelectedIndex, ready]);
+    useEffect(() => {
+      if (!ready) return;
+      inject(`window.FM && FM.setPlotMode(${plotMode ? "true" : "false"})`);
+    }, [plotMode, ready]);
 
-  const handleMessage = (e: WebViewMessageEvent) => {
-    try {
-      const msg = JSON.parse(e.nativeEvent.data) as
-        | { type: "ready" }
-        | { type: "longpress"; lat: number; lng: number }
-        | { type: "plotTap"; lat: number; lng: number }
-        | { type: "plotMove"; index: number; lat: number; lng: number }
-        | { type: "plotInsert"; index: number; lat: number; lng: number }
-        | { type: "plotVertexTap"; index: number }
-        | { type: "datasetTap"; id: string }
-        | { type: "trackTap"; ids: string[] }
-        | {
-            type: "view";
-            lat: number;
-            lng: number;
-            zoom: number;
-            bounds: [number, number, number, number];
-          };
-      if (msg.type === "ready") {
-        setReady(true);
-        onReady?.();
-      } else if (msg.type === "longpress") {
-        onLongPress(msg.lat, msg.lng);
-      } else if (msg.type === "plotTap") {
-        onPlotTap?.(msg.lat, msg.lng);
-      } else if (msg.type === "plotMove") {
-        onPlotMove?.(msg.index, msg.lat, msg.lng);
-      } else if (msg.type === "plotInsert") {
-        onPlotInsert?.(msg.index, msg.lat, msg.lng);
-      } else if (msg.type === "plotVertexTap") {
-        onPlotVertexTap?.(msg.index);
-      } else if (msg.type === "datasetTap") {
-        onDatasetTap?.(msg.id);
-      } else if (msg.type === "trackTap") {
-        onTrackTap?.(msg.ids);
-      } else if (msg.type === "view") {
-        onView?.({
-          lat: msg.lat,
-          lng: msg.lng,
-          zoom: msg.zoom,
-          bounds: msg.bounds,
-        });
+    useEffect(() => {
+      if (!ready) return;
+      const safe = (plotPoints ?? []).map((p) => ({ lat: p.lat, lng: p.lng }));
+      const sel =
+        typeof plotSelectedIndex === "number" ? plotSelectedIndex : -1;
+      inject(`window.FM && FM.renderPlot(${JSON.stringify(safe)}, ${sel})`);
+    }, [plotPoints, plotSelectedIndex, ready]);
+
+    const handleMessage = (e: WebViewMessageEvent) => {
+      try {
+        const msg = JSON.parse(e.nativeEvent.data) as
+          | { type: "ready" }
+          | { type: "longpress"; lat: number; lng: number }
+          | { type: "plotTap"; lat: number; lng: number }
+          | { type: "plotMove"; index: number; lat: number; lng: number }
+          | { type: "plotInsert"; index: number; lat: number; lng: number }
+          | { type: "plotVertexTap"; index: number }
+          | { type: "datasetTap"; id: string }
+          | { type: "trackTap"; ids: string[] }
+          | {
+              type: "view";
+              lat: number;
+              lng: number;
+              zoom: number;
+              bounds: [number, number, number, number];
+            };
+        if (msg.type === "ready") {
+          setReady(true);
+          onReady?.();
+        } else if (msg.type === "longpress") {
+          onLongPress(msg.lat, msg.lng);
+        } else if (msg.type === "plotTap") {
+          onPlotTap?.(msg.lat, msg.lng);
+        } else if (msg.type === "plotMove") {
+          onPlotMove?.(msg.index, msg.lat, msg.lng);
+        } else if (msg.type === "plotInsert") {
+          onPlotInsert?.(msg.index, msg.lat, msg.lng);
+        } else if (msg.type === "plotVertexTap") {
+          onPlotVertexTap?.(msg.index);
+        } else if (msg.type === "datasetTap") {
+          onDatasetTap?.(msg.id);
+        } else if (msg.type === "trackTap") {
+          onTrackTap?.(msg.ids);
+        } else if (msg.type === "view") {
+          onView?.({
+            lat: msg.lat,
+            lng: msg.lng,
+            zoom: msg.zoom,
+            bounds: msg.bounds,
+          });
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    }
-  };
+    };
 
-  if (Platform.OS === "web") {
-    return (
-      <View style={[styles.fallback, { backgroundColor: colors.muted }]}>
-        <View
-          style={[
-            styles.fallbackCard,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <Feather name="smartphone" size={28} color={colors.primary} />
-          <Text style={[styles.fallbackTitle, { color: colors.foreground }]}>
-            Open mapper.one on your phone
-          </Text>
-          <Text
-            style={[styles.fallbackText, { color: colors.mutedForeground }]}
+    if (Platform.OS === "web") {
+      return (
+        <View style={[styles.fallback, { backgroundColor: colors.muted }]}>
+          <View
+            style={[
+              styles.fallbackCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
           >
-            The map view runs on real devices via Expo Go. The browser preview
-            is best-effort — Library, Waypoints, and About work here, but
-            Leaflet needs a native WebView for offline tiles and GPS to work
-            properly.
-          </Text>
-          <Text
-            style={[styles.fallbackHint, { color: colors.mutedForeground }]}
-          >
-            Scan the Expo QR code from the workflow, or open this URL in Expo
-            Go.
-          </Text>
+            <Feather name="smartphone" size={28} color={colors.primary} />
+            <Text style={[styles.fallbackTitle, { color: colors.foreground }]}>
+              Open Scenders Ride on your phone
+            </Text>
+            <Text
+              style={[styles.fallbackText, { color: colors.mutedForeground }]}
+            >
+              The map view runs on real devices via Expo Go. The browser preview
+              is best-effort — Library, Waypoints, and About work here, but
+              Leaflet needs a native WebView for offline tiles and GPS to work
+              properly.
+            </Text>
+            <Text
+              style={[styles.fallbackHint, { color: colors.mutedForeground }]}
+            >
+              Scan the Expo QR code from the workflow, or open this URL in Expo
+              Go.
+            </Text>
+          </View>
         </View>
-      </View>
-    );
-  }
+      );
+    }
 
-  if (!html) {
+    if (!html) {
+      return (
+        <View style={[styles.loader, { backgroundColor: colors.muted }]}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      );
+    }
+
     return (
-      <View style={[styles.loader, { backgroundColor: colors.muted }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
+      <WebView
+        ref={webRef}
+        originWhitelist={["*"]}
+        source={{ html, baseUrl: "about:blank" }}
+        onMessage={handleMessage}
+        javaScriptEnabled
+        domStorageEnabled
+        style={[styles.web, { backgroundColor: colors.muted }]}
+        androidLayerType="hardware"
+        setSupportMultipleWindows={false}
+        allowFileAccess
+        mixedContentMode="always"
+      />
     );
-  }
-
-  return (
-    <WebView
-      ref={webRef}
-      originWhitelist={["*"]}
-      source={{ html, baseUrl: "about:blank" }}
-      onMessage={handleMessage}
-      javaScriptEnabled
-      domStorageEnabled
-      style={[styles.web, { backgroundColor: colors.muted }]}
-      androidLayerType="hardware"
-      setSupportMultipleWindows={false}
-      allowFileAccess
-      mixedContentMode="always"
-    />
-  );
-});
+  },
+);
 
 export default MapViewComponent;
 

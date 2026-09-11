@@ -12,25 +12,37 @@ import { useColors } from "@/hooks/useColors";
 function NativeTabLayout() {
   return (
     <NativeTabs>
-      <NativeTabs.Trigger name="index">
+      <NativeTabs.Trigger name="rides">
         <Icon sf={{ default: "map", selected: "map.fill" }} />
-        <Label>Map</Label>
+        <Label>Explore</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="index">
+        <Icon
+          sf={{ default: "mappin.and.ellipse", selected: "mappin.and.ellipse" }}
+        />
+        <Label>Ride</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="library">
-        <Icon sf={{ default: "square.stack.3d.up", selected: "square.stack.3d.up.fill" }} />
-        <Label>Library</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="waypoints">
-        <Icon sf={{ default: "mappin.and.ellipse", selected: "mappin.and.ellipse" }} />
-        <Label>Waypoints</Label>
+        <Icon
+          sf={{
+            default: "square.stack.3d.up",
+            selected: "square.stack.3d.up.fill",
+          }}
+        />
+        <Label>Saved</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="tracks">
-        <Icon sf={{ default: "point.topleft.down.curvedto.point.bottomright.up", selected: "point.topleft.down.curvedto.point.bottomright.up" }} />
-        <Label>Tracks</Label>
+        <Icon
+          sf={{
+            default: "point.topleft.down.curvedto.point.bottomright.up",
+            selected: "point.topleft.down.curvedto.point.bottomright.up",
+          }}
+        />
+        <Label>My Rides</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="about">
         <Icon sf={{ default: "info.circle", selected: "info.circle.fill" }} />
-        <Label>About</Label>
+        <Label>More</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -76,26 +88,46 @@ function ClassicTabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="rides"
         options={{
-          title: "Map",
+          title: "Explore",
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="map" tintColor={color} size={24} />
             ) : (
-              <Feather name="map" size={22} color={color} />
+              <Feather name="compass" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Ride",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView
+                name="mappin.and.ellipse"
+                tintColor={color}
+                size={24}
+              />
+            ) : (
+              <Feather name="navigation" size={22} color={color} />
             ),
         }}
       />
       <Tabs.Screen
         name="library"
         options={{
-          title: "Library",
+          title: "Saved",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="square.stack.3d.up" tintColor={color} size={24} />
+              <SymbolView
+                name="square.stack.3d.up"
+                tintColor={color}
+                size={24}
+              />
             ) : (
-              <Feather name="layers" size={22} color={color} />
+              <Feather name="bookmark" size={22} color={color} />
             ),
         }}
       />
@@ -103,9 +135,14 @@ function ClassicTabLayout() {
         name="waypoints"
         options={{
           title: "Waypoints",
+          href: null,
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="mappin.and.ellipse" tintColor={color} size={24} />
+              <SymbolView
+                name="mappin.and.ellipse"
+                tintColor={color}
+                size={24}
+              />
             ) : (
               <Feather name="map-pin" size={22} color={color} />
             ),
@@ -114,7 +151,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="tracks"
         options={{
-          title: "Tracks",
+          title: "My Rides",
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView
@@ -130,12 +167,12 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="about"
         options={{
-          title: "About",
+          title: "More",
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="info.circle" tintColor={color} size={24} />
             ) : (
-              <Feather name="info" size={22} color={color} />
+              <Feather name="menu" size={22} color={color} />
             ),
         }}
       />
