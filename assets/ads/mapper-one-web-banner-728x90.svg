@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="728" height="90" viewBox="0 0 728 90" role="img" aria-labelledby="title desc">
+  <title id="title">mapper.one web banner</title>
+  <desc id="desc">Track the trail. Keep the story. Record routes offline. Explore farther. Download the app for free.</desc>
+  <rect width="728" height="90" fill="#1d352d"/>
+  <g fill="none" stroke="#466b50" stroke-width="1.25" opacity=".72">
+    <path d="M-22 70c42-26 79-26 113-7 31 17 67 18 101-1 43-24 84-24 123-3 35 19 72 18 108-4 39-23 78-23 117-1 34 19 72 18 111-5"/>
+    <path d="M-10 82c37-24 72-24 104-6 32 18 69 18 105-1 42-22 80-22 118-2 36 19 73 18 110-3 40-23 79-23 118-2 33 18 67 18 106-3"/>
+    <path d="M34 38c22-16 45-17 66-5 21 12 44 12 65 0 26-15 50-15 73-3 23 12 47 12 71-2 24-14 49-14 72-2 22 12 45 12 68-1"/>
+    <path d="M447 8c23 17 28 31 16 43-11 11-11 24 2 37"/>
+    <path d="M484 4c24 18 30 35 16 51-12 13-12 27 3 42"/>
+    <path d="M521 2c25 20 31 39 16 57-12 14-11 28 4 44"/>
+  </g>
+  <g transform="translate(24 25)" fill="#f6f3ee">
+    <circle cx="15" cy="15" r="12" fill="none" stroke="#f6f3ee" stroke-width="2"/>
+    <path d="M19.5 10.5 16.1 18.1 8.5 21.5l3.4-7.6z" fill="#93b66d"/>
+    <circle cx="15" cy="15" r="2.1" fill="#f6f3ee"/>
+    <text x="37" y="21" font-family="Fraunces, Georgia, serif" font-size="20" font-weight="700" letter-spacing=".35">mapper.one</text>
+  </g>
+  <g fill="#f6f3ee">
+    <text x="237" y="38" font-family="Fraunces, Georgia, serif" font-size="21" font-weight="700">Track the trail. Keep the story.</text>
+    <text x="237" y="59" font-family="Inter, Arial, sans-serif" font-size="12" fill="#dbe5d5">Record routes offline. Explore farther. Download the app for free.</text>
+  </g>
+</svg>

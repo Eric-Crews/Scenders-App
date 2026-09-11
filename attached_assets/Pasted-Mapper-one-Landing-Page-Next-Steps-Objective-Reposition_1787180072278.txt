@@ -1,0 +1,521 @@
+Mapper.one Landing Page — Next Steps
+
+Objective
+
+Reposition mapper.one from an open-source/recreational mapping project into a polished field mapping platform for people who work outdoors, while preserving enough of its outdoor/adventure identity that it doesn't feel like generic enterprise software.
+
+The central product story should shift from:
+
+An open-source mapping application
+
+to:
+
+Map the places where you work.
+
+Mapper.one lets people record routes in the field, mark important locations, attach photos and notes, and share that knowledge with coworkers, crews, clients, or collaborators.
+
+The strongest initial audiences include:
+
+- Arborists and tree-service companies
+- Trail builders and trail-maintenance organizations
+- Landscape architects and landscaping companies
+- Forestry and land-management professionals
+- Parks and recreation departments
+- Conservation organizations
+- Property and estate managers
+- Surveying and field crews
+- Construction/site crews
+- Farms, vineyards and large-property operators
+- Outdoor guides and recreation organizations
+
+The site should communicate that mapper.one was designed for people who actually spend their days outside and on the ground, rather than sitting behind GIS software.
+
+---
+
+1. Move Away From Open Source Positioning
+
+Remove open source as a primary part of the mapper.one identity.
+
+The landing page should no longer lead with GitHub, source code, self-hosting, developer language, or the idea that mapper.one is primarily a community software project.
+
+The commercial product should instead be presented as proprietary mapper.one software and services.
+
+GitHub references should be removed from:
+
+- Primary navigation
+- Hero section
+- Primary CTAs
+- Feature descriptions
+- Footer promotional areas
+
+Existing open-source repositories do not necessarily need to disappear immediately, but they should no longer define the brand.
+
+The new brand hierarchy should be:
+
+mapper.one
+
+Field mapping for people who work outside.
+
+---
+
+2. Preserve the Recreational DNA
+
+Do not turn mapper.one into something that visually resembles enterprise asset-management software.
+
+The outdoor roots are actually a competitive advantage.
+
+The experience should still feel appropriate for someone mapping:
+
+- a mountain-bike trail
+- a forest
+- a 100-acre property
+- a landscaping project
+- a tree-removal site
+- a conservation area
+- a backcountry route
+
+Use large outdoor photography, satellite/topographic mapping imagery, GPS tracks, pins, field photos and people working outdoors.
+
+Think:
+
+Outdoor adventure aesthetic + professional field tool.
+
+Not:
+
+Corporate SaaS dashboard + stock-photo construction workers.
+
+---
+
+3. New Hero
+
+The first screen needs to explain the commercial use case almost instantly.
+
+Recommended direction
+
+Map the places where you work.
+
+Record routes. Mark important locations. Add photos and field notes. Share everything with the people who need to find it later.
+
+[Start Mapping] [See How It Works]
+
+Available for iPhone
+
+The hero visual should show the actual mapper.one interface over a compelling outdoor landscape or satellite map.
+
+Show an example route containing several meaningful pins:
+
+Tree Removal
+
+Equipment Access
+
+Trail Drainage
+
+Property Entrance
+
+This immediately explains that these aren't simply recreational waypoints.
+
+---
+
+4. Immediately Demonstrate the Core Workflow
+
+Directly underneath the hero, explain mapper.one in three or four visual steps.
+
+Walk it. Mark it. Share it.
+
+1 — Record
+
+Walk, drive or ride through the property while mapper.one records your route.
+
+2 — Mark
+
+Drop GPS waypoints anywhere something matters.
+
+3 — Document
+
+Attach photographs, descriptions and field notes directly to locations.
+
+4 — Share
+
+Give someone else the map so they can find the route, location and information without you being there.
+
+This should become the central product narrative.
+
+---
+
+5. Introduce "Knowledge Attached to Place"
+
+The landing page should emphasize that mapper.one captures field knowledge, not simply coordinates.
+
+Suggested section:
+
+Don't just drop a pin. Explain what's there.
+
+Every waypoint can contain the context someone needs when they reach it.
+
+Show an actual UI example:
+
+White Oak — Remove
+
+📍 35.XXXX, -82.XXXX
+
+[tree photograph]
+
+Notes
+
+Dead upper canopy. Remove entire tree. Access from service road. Avoid septic field east of driveway.
+
+This demonstrates the value proposition much better than describing "custom waypoints."
+
+---
+
+6. Build an Industry Use-Case Section
+
+Create a visually strong section titled:
+
+Built for work that happens outside.
+
+Use cards rather than a long feature list.
+
+Arborists
+
+Mark trees, photograph hazards, document removals and record equipment-access routes.
+
+Trail Builders
+
+Record proposed trails, mark drainage problems, photograph maintenance needs and share work locations with crews.
+
+Landscaping
+
+Map properties, irrigation, beds, gates, mowing areas, hazards and recurring maintenance instructions.
+
+Landscape Architecture
+
+Document existing site conditions, photograph features and create location-specific project notes during field visits.
+
+Forestry
+
+Record access roads, timber stands, boundaries, crossings, hazards and field observations.
+
+Land Management
+
+Create a permanent geographic record of infrastructure, projects, habitat improvements and property conditions.
+
+Each card should eventually link to an SEO landing page:
+
+"/arborists"
+
+"/trail-builders"
+
+"/landscaping"
+
+"/landscape-architecture"
+
+"/forestry"
+
+"/land-management"
+
+This gives mapper.one both a sales funnel and a significant organic-search opportunity.
+
+---
+
+7. Keep an Adventure/Recreation Section
+
+Commercialization shouldn't mean abandoning recreational users.
+
+Farther down the homepage:
+
+And when work ends, keep exploring.
+
+Use mapper.one to record:
+
+- Hiking routes
+- Mountain-bike rides
+- Hunting locations
+- Fishing access
+- Backcountry routes
+- Campsites
+- Overland routes
+- Personal property maps
+
+This keeps the original mapper.one personality intact while clearly establishing that commercial field mapping is now the primary business.
+
+The distinction becomes:
+
+Built for the field. Useful wherever you go.
+
+---
+
+8. Make Sharing a Major Feature
+
+Sharing should receive its own homepage section because it's what differentiates the product story from simply recording GPS tracks.
+
+Be there without being there.
+
+A manager, estimator or experienced crew member can map a site once and give someone else everything they need to return later.
+
+Show:
+
+Johnson Property
+
+12 waypoints
+2 recorded routes
+18 photos
+
+Shared with:
+
+Mike
+Sarah
+Field Crew
+
+[Share Map]
+
+Supporting copy:
+
+Send the route, locations, photographs and instructions—not another text message explaining where everything is.
+
+This is one of the strongest commercial messages on the entire site.
+
+---
+
+9. Show Real-World Scenarios
+
+Rather than a generic feature grid, show mapper.one solving actual problems.
+
+Tree company
+
+Estimator maps trees → records access → crew receives job map.
+
+Trail organization
+
+Volunteer identifies erosion → photographs location → maintenance crew navigates directly to it.
+
+Landscaping company
+
+Manager maps new property → documents special instructions → weekly crew has permanent site information.
+
+Forester
+
+Forester records road → marks crossing → photographs conditions → shares field map with landowner or contractor.
+
+These mini-stories make the software immediately understandable.
+
+---
+
+10. Introduce Mapper.one for Teams
+
+Even if all of the functionality isn't ready yet, the website architecture should anticipate the commercial product.
+
+mapper.one for Teams
+
+Give your entire crew a shared understanding of the places you manage.
+
+Future commercial functionality can include:
+
+- Shared projects
+- Company workspaces
+- Crew access
+- Custom waypoint categories
+- Photos and notes
+- Project folders
+- Assignments
+- Offline maps
+- GPX/KML export
+- PDF field reports
+- Before/after documentation
+- Web dashboard
+- Company branding
+
+Avoid presenting unfinished functionality as currently available. Instead, separate existing functionality from clearly labeled upcoming Teams capabilities.
+
+CTA:
+
+Join the Teams Early Access List
+
+This provides a way to start capturing commercial leads before every Teams feature is finished.
+
+---
+
+11. Change the Navigation
+
+Simplify the navigation around customers rather than technology.
+
+Recommended:
+
+Mapper.one
+
+Product
+Industries
+Teams
+Recreation
+Pricing
+
+[Get the App]
+
+"Industries" can open:
+
+- Arborists
+- Trail Builders
+- Landscaping
+- Forestry
+- Land Management
+- Field Services
+
+Remove open-source/developer navigation from the primary experience.
+
+---
+
+12. Establish a Visual Identity Around "Outdoor Work"
+
+The design should occupy an unusual middle ground.
+
+Avoid sterile SaaS graphics.
+
+Use imagery involving:
+
+forests + topo maps + satellite imagery + trails + field crews + properties + GPS tracks + photographs
+
+The site should feel closer to an outdoor brand than an enterprise GIS company.
+
+A trail builder with muddy boots should look at mapper.one and think:
+
+«This was built for someone like me.»
+
+An arborist should have the same reaction.
+
+So should a forester.
+
+That common identity is people whose workplace is a place.
+
+---
+
+13. Homepage Structure
+
+The redesigned homepage should roughly follow:
+
+Hero
+Map the places where you work.
+
+↓
+
+Core Workflow
+Walk it. Mark it. Share it.
+
+↓
+
+Interactive Product Demonstration
+Track + waypoint + photograph + notes
+
+↓
+
+Industries
+Built for work that happens outside.
+
+↓
+
+Sharing
+Be there without being there.
+
+↓
+
+Real-World Workflows
+Tree crew / trail crew / landscaper / forestry
+
+↓
+
+Mapper.one for Teams
+Turn individual field knowledge into shared company knowledge.
+
+↓
+
+Recreation
+And when work ends, keep exploring.
+
+↓
+
+Final CTA
+
+Your work has a map.
+
+Start building it with mapper.one.
+
+[Get mapper.one] [Explore Teams]
+
+---
+
+14. Product Strategy Behind the Redesign
+
+The website redesign should also reflect a larger change in how mapper.one thinks about its product.
+
+Today the fundamental object may effectively be a map/track.
+
+Commercially, the hierarchy should eventually become:
+
+Organization
+
+→ Project / Property / Job
+
+→ Routes
+
+→ Waypoints
+
+→ Photos + Notes
+
+→ People
+
+→ Assignments / Status
+
+This allows the exact same underlying mapper.one technology to serve very different industries without building separate applications.
+
+A tree company calls it a Job.
+
+A landscaper calls it a Property.
+
+A trail organization calls it a Project.
+
+A forester calls it a Tract.
+
+Underneath, they're using essentially the same mapper.one data model.
+
+---
+
+15. Immediate Development Priorities
+
+The landing-page work can happen before rebuilding the entire application.
+
+Phase 1 — Reposition
+
+Remove open-source messaging, rewrite the homepage around field work, improve screenshots/product demonstrations, retain App Store acquisition and add commercial lead capture.
+
+Phase 2 — Industry Pages
+
+Build dedicated landing pages for Arborists, Trail Builders, Landscaping, Landscape Architecture, Forestry and Land Management.
+
+Phase 3 — Commercial Validation
+
+Recruit roughly 5–10 businesses in the strongest categories and watch how they actually use tracks, waypoints, photographs and sharing.
+
+Phase 4 — Teams MVP
+
+Use those businesses to determine which commercial functionality deserves development first rather than attempting to build a complete GIS platform.
+
+Phase 5 — Paid Product
+
+Introduce individual Pro and Mapper.one Teams subscriptions once the commercial workflow has been validated.
+
+---
+
+Core Brand Direction
+
+The most important change is not making mapper.one look more "business-like."
+
+It's changing the reason someone thinks it exists.
+
+Old perception:
+
+«Cool mapping app for creating and sharing routes.»
+
+New perception:
+
+«A simple way to capture everything you know about a place and share it with the people who work there.»
+
+That leaves plenty of room for hiking, biking and exploring while creating a much stronger reason for an arborist, trail organization, landscaper, forester or land manager to actually pay for mapper.one.

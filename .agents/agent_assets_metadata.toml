@@ -69,4 +69,4 @@ id = "p80yqakcT-AjAcGZq1Znm"
 uri = "file://artifacts/mobile/.android-credentials/mapper-one-upload-reset.pem"
 type = "unspecified"
 title = "Google Play upload-key certificate"
-description = "Public PEM certificate for the Google Play upload-key reset request. Upload this certificate in Play Console; it contains no private key.
+description = "Public PEM certificate for the Google Play upload-key reset request. Upload this certificate in Play Console; it contains no private key."

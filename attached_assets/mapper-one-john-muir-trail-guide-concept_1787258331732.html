@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>John Muir Trail — Yosemite Segment: Map & Trail Guide | mapper.one</title>
+  <meta name="description" content="Explore a 24-mile mapped John Muir Trail segment in Yosemite National Park, with route context, official planning information, permits, map details, and mapper.one app access." />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://mapper.one/trails/john-muir-trail-78f23e4a" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="John Muir Trail — Yosemite Segment | mapper.one" />
+  <meta property="og:description" content="A map-first trail guide for a 24-mile John Muir Trail segment in Yosemite National Park." />
+  <style>
+    :root{
+      --ink:#172018;
+      --paper:#f4f1e8;
+      --paper-2:#ece8db;
+      --forest:#274d38;
+      --forest-2:#173526;
+      --lime:#c8ef77;
+      --orange:#e97847;
+      --blue:#89b9c8;
+      --muted:#666e64;
+      --line:rgba(23,32,24,.16);
+      --white:#fffef8;
+      --shadow:0 16px 40px rgba(27,34,28,.12);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--paper);
+      color:var(--ink);
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height:1.55;
+    }
+    a{color:inherit}
+    .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+    .eyebrow{
+      font-size:.74rem;
+      letter-spacing:.13em;
+      text-transform:uppercase;
+      font-weight:800;
+      color:var(--forest);
+    }
+    header{
+      position:sticky;top:0;z-index:20;
+      background:rgba(244,241,232,.9);
+      backdrop-filter:blur(14px);
+      border-bottom:1px solid var(--line);
+    }
+    .nav{height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+    .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:900;font-size:1.08rem;letter-spacing:-.02em}
+    .brandmark{width:28px;height:28px;border-radius:9px;background:var(--ink);position:relative;overflow:hidden}
+    .brandmark:before{content:"";position:absolute;left:5px;bottom:5px;width:18px;height:10px;border-left:2px solid var(--lime);border-bottom:2px solid var(--lime);transform:skewY(-25deg) rotate(-8deg)}
+    .navlinks{display:flex;gap:24px;align-items:center;font-size:.9rem;font-weight:700}
+    .navlinks a{text-decoration:none;color:#3c463e}
+    .nav-cta{padding:10px 15px;border-radius:999px;background:var(--ink)!important;color:white!important}
+    .hero{padding:56px 0 28px}
+    .crumbs{font-size:.86rem;color:var(--muted);margin-bottom:25px}
+    .hero-grid{display:grid;grid-template-columns:1.08fr .92fr;gap:42px;align-items:end}
+    h1{
+      font-family:Georgia, "Times New Roman", serif;
+      font-size:clamp(3.15rem,7vw,6.2rem);
+      line-height:.9;
+      letter-spacing:-.055em;
+      margin:8px 0 20px;
+      font-weight:700;
+    }
+    .dek{font-size:1.16rem;color:#455047;max-width:760px;margin:0 0 24px}
+    .chips{display:flex;flex-wrap:wrap;gap:9px}
+    .chip{border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:.84rem;font-weight:750;background:rgba(255,255,255,.35)}
+    .hero-note{
+      background:var(--forest-2);
+      color:#f6f5ee;
+      padding:24px;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      transform:rotate(1.2deg);
+      position:relative;
+    }
+    .hero-note:after{
+      content:"";
+      position:absolute;width:46px;height:18px;
+      background:rgba(255,250,218,.62);top:-8px;left:44%;
+      transform:rotate(-4deg);
+    }
+    .hero-note strong{display:block;font-family:Georgia,serif;font-size:1.55rem;line-height:1.08;margin:5px 0 9px}
+    .hero-note p{margin:0;color:#d9e4dc;font-size:.94rem}
+    .map-shell{padding:14px 0 36px}
+    .map-card{
+      background:#d7dfd0;
+      border:1px solid rgba(23,32,24,.18);
+      border-radius:30px;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+      position:relative;
+      min-height:560px;
+    }
+    .map-ui{
+      position:absolute;inset:0;z-index:2;pointer-events:none;
+    }
+    .map-top{
+      position:absolute;left:22px;right:22px;top:20px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start
+    }
+    .map-label{
+      background:rgba(255,254,248,.94);border:1px solid var(--line);border-radius:16px;
+      padding:13px 15px;box-shadow:0 10px 25px rgba(23,32,24,.12)
+    }
+    .map-label b{display:block;font-size:.84rem}
+    .map-label span{font-size:.78rem;color:var(--muted)}
+    .map-actions{display:flex;gap:8px}
+    .iconbtn{width:40px;height:40px;border-radius:13px;background:rgba(255,254,248,.94);border:1px solid var(--line);display:grid;place-items:center;font-weight:900}
+    .map-bottom{
+      position:absolute;left:22px;right:22px;bottom:20px;
+      display:flex;justify-content:space-between;align-items:end;gap:15px
+    }
+    .map-legend{background:rgba(255,254,248,.94);padding:10px 13px;border-radius:14px;font-size:.78rem;border:1px solid var(--line)}
+    .open-route{
+      pointer-events:auto;text-decoration:none;background:var(--ink);color:white;padding:14px 18px;border-radius:14px;
+      font-weight:850;box-shadow:0 12px 24px rgba(23,32,24,.22)
+    }
+    .map-svg{width:100%;height:560px;display:block}
+    .stats{
+      display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+      margin:18px 0 72px
+    }
+    .stat{padding:24px 22px;border-right:1px solid var(--line)}
+    .stat:last-child{border-right:0}
+    .stat small{display:block;color:var(--muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin-bottom:4px}
+    .stat strong{font-size:1.18rem}
+    .content-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:58px;align-items:start}
+    .article h2{
+      font-family:Georgia,serif;font-size:2.25rem;line-height:1.05;letter-spacing:-.035em;
+      margin:0 0 18px
+    }
+    .article h3{font-size:1.1rem;margin:28px 0 8px}
+    .article p{font-size:1.04rem;color:#3d493f}
+    .section{padding:0 0 58px;margin-bottom:54px;border-bottom:1px solid var(--line)}
+    .callout{
+      margin:26px 0;background:var(--white);border:1px solid var(--line);border-radius:18px;padding:20px 21px;
+      box-shadow:0 8px 24px rgba(23,32,24,.05)
+    }
+    .callout b{display:block;margin-bottom:5px}
+    .route-steps{display:grid;gap:14px;margin-top:22px}
+    .step{display:grid;grid-template-columns:42px 1fr;gap:14px;align-items:start}
+    .num{width:38px;height:38px;border-radius:50%;background:var(--forest);color:white;display:grid;place-items:center;font-size:.82rem;font-weight:900}
+    .step strong{display:block}
+    .step span{font-size:.92rem;color:var(--muted)}
+    .aside{position:sticky;top:98px;display:grid;gap:18px}
+    .app-card{background:var(--ink);color:white;border-radius:24px;padding:24px;box-shadow:var(--shadow)}
+    .app-card h3{font-family:Georgia,serif;font-size:1.75rem;line-height:1.05;margin:8px 0 10px}
+    .app-card p{color:#cdd5cf;font-size:.92rem}
+    .store-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+    .store{background:white;color:var(--ink);border-radius:11px;padding:10px 8px;text-align:center;font-size:.75rem;font-weight:900;text-decoration:none}
+    .mini-card{background:rgba(255,255,255,.4);border:1px solid var(--line);border-radius:20px;padding:18px}
+    .mini-card h4{margin:0 0 9px;font-size:.95rem}
+    .mini-card p{margin:0;font-size:.86rem;color:var(--muted)}
+    .permit-box{background:#e7d9c6;border:1px solid #cdbb9f;border-radius:22px;padding:24px}
+    .permit-box h3{margin:0 0 8px;font-family:Georgia,serif;font-size:1.5rem}
+    .faq{display:grid;gap:10px}
+    details{border-top:1px solid var(--line);padding:16px 0}
+    summary{cursor:pointer;font-weight:850}
+    details p{font-size:.94rem;margin:10px 0 0}
+    .sources{font-size:.9rem}
+    .sources a{color:var(--forest);font-weight:700}
+    .source-item{padding:13px 0;border-top:1px solid var(--line)}
+    .bottom-cta{
+      margin:70px 0 0;background:var(--forest);border-radius:30px;color:white;padding:40px;
+      display:grid;grid-template-columns:1fr auto;gap:30px;align-items:center
+    }
+    .bottom-cta h2{font-family:Georgia,serif;font-size:2.6rem;line-height:1;margin:0 0 8px}
+    .bottom-cta p{margin:0;color:#dbe5dd}
+    .bottom-cta a{background:var(--lime);color:var(--ink);padding:15px 19px;border-radius:13px;text-decoration:none;font-weight:900;white-space:nowrap}
+    footer{margin-top:80px;padding:32px 0 100px;border-top:1px solid var(--line);font-size:.84rem;color:var(--muted)}
+    .mobile-cta{display:none}
+    @media (max-width:900px){
+      .hero-grid,.content-grid,.bottom-cta{grid-template-columns:1fr}
+      .hero-note{transform:none}
+      .aside{position:static}
+      .stats{grid-template-columns:1fr 1fr}
+      .stat:nth-child(2){border-right:0}
+      .stat:nth-child(-n+2){border-bottom:1px solid var(--line)}
+      .navlinks a:not(.nav-cta){display:none}
+      .map-card,.map-svg{min-height:470px;height:470px}
+      .mobile-cta{
+        display:flex;position:fixed;z-index:50;left:12px;right:12px;bottom:12px;
+        background:var(--ink);color:white;border-radius:16px;padding:11px 12px 11px 15px;align-items:center;justify-content:space-between;
+        box-shadow:0 14px 40px rgba(0,0,0,.25);font-size:.82rem
+      }
+      .mobile-cta a{background:var(--lime);color:var(--ink);text-decoration:none;padding:10px 12px;border-radius:10px;font-weight:900}
+    }
+    @media (max-width:560px){
+      .wrap{padding:0 17px}
+      .hero{padding-top:35px}
+      h1{font-size:3.55rem}
+      .map-top{left:12px;right:12px;top:12px}
+      .map-bottom{left:12px;right:12px;bottom:12px}
+      .map-legend{display:none}
+      .stats{margin-bottom:52px}
+      .stat{padding:18px 12px}
+      .bottom-cta{padding:28px}
+      .bottom-cta h2{font-size:2rem}
+    }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@graph":[
+      {
+        "@type":"WebPage",
+        "@id":"https://mapper.one/trails/john-muir-trail-78f23e4a#webpage",
+        "url":"https://mapper.one/trails/john-muir-trail-78f23e4a",
+        "name":"John Muir Trail — Yosemite Segment: Map & Trail Guide | mapper.one",
+        "description":"Map-first trail guide for a 24-mile John Muir Trail segment in Yosemite National Park."
+      },
+      {
+        "@type":"BreadcrumbList",
+        "itemListElement":[
+          {"@type":"ListItem","position":1,"name":"Trails","item":"https://mapper.one/trails"},
+          {"@type":"ListItem","position":2,"name":"California"},
+          {"@type":"ListItem","position":3,"name":"Yosemite National Park"},
+          {"@type":"ListItem","position":4,"name":"John Muir Trail — Yosemite Segment"}
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#"><span class="brandmark"></span><span>mapper.one</span></a>
+    <nav class="navlinks">
+      <a href="#guide">Trail Guide</a>
+      <a href="#permits">Permits</a>
+      <a href="#sources">Sources</a>
+      <a class="nav-cta" href="#app">Get the App</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <div class="crumbs">Trails / California / Yosemite National Park</div>
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">★ Enhanced trail guide · Yosemite National Park</div>
+        <h1>John Muir Trail<br>Yosemite Segment</h1>
+        <p class="dek">A map-first guide to a <strong>24-mile public trail record</strong> in Yosemite National Park. Use this page to understand the route, check official planning information, and take the map with you in mapper.one.</p>
+        <div class="chips">
+          <span class="chip">24 mi mapped segment</span>
+          <span class="chip">Hiking</span>
+          <span class="chip">Pack / Saddle</span>
+          <span class="chip">Sierra Nevada</span>
+        </div>
+      </div>
+      <div class="hero-note">
+        <span class="eyebrow" style="color:var(--lime)">Know what this map represents</span>
+        <strong>This is a mapped Yosemite segment, not the full John Muir Trail.</strong>
+        <p>The full JMT continues far beyond Yosemite. Exact endpoints for this 24-mile public route record are not asserted here unless they are present in the underlying route data.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="map-shell wrap">
+    <div class="map-card">
+      <svg class="map-svg" viewBox="0 0 1180 560" preserveAspectRatio="none" aria-label="Stylized trail map preview">
+        <rect width="1180" height="560" fill="#d7dfd0"/>
+        <g fill="none" stroke="#7f927f" opacity=".28" stroke-width="1.3">
+          <path d="M-30 95 C145 35,240 155,405 95 S705 5,880 95 S1075 155,1210 75"/>
+          <path d="M-30 125 C135 65,250 190,420 120 S700 28,895 120 S1070 175,1210 110"/>
+          <path d="M-30 155 C145 95,275 215,440 145 S710 55,910 145 S1090 205,1210 145"/>
+          <path d="M-30 360 C120 275,250 420,420 340 S730 255,890 345 S1080 420,1210 340"/>
+          <path d="M-30 395 C135 315,270 455,445 375 S730 295,910 380 S1095 455,1210 375"/>
+          <path d="M40 520 C160 425,275 515,370 465 S620 400,725 470 S990 510,1160 430"/>
+        </g>
+        <g fill="#b9c6af" opacity=".5">
+          <path d="M0 500 L0 360 L160 300 L265 350 L350 255 L480 300 L570 205 L690 300 L790 210 L895 305 L1000 245 L1180 335 L1180 560 L0 560Z"/>
+        </g>
+        <path d="M240 520 C290 475 325 462 350 418 C375 372 357 345 405 316 C455 285 500 300 525 260 C552 217 535 178 585 156 C640 132 685 165 727 126 C770 86 812 60 885 46"
+              fill="none" stroke="#fffef8" stroke-width="13" stroke-linecap="round" opacity=".92"/>
+        <path d="M240 520 C290 475 325 462 350 418 C375 372 357 345 405 316 C455 285 500 300 525 260 C552 217 535 178 585 156 C640 132 685 165 727 126 C770 86 812 60 885 46"
+              fill="none" stroke="#e97847" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="240" cy="520" r="11" fill="#172018"/><circle cx="885" cy="46" r="11" fill="#172018"/>
+        <g font-family="system-ui" font-size="15" font-weight="800" fill="#172018">
+          <text x="258" y="520">Mapped route start</text>
+          <text x="905" y="51">Mapped route end</text>
+        </g>
+        <path d="M60 250 C150 210 195 258 250 228 C305 195 353 200 415 175" fill="none" stroke="#89b9c8" stroke-width="5" opacity=".7"/>
+      </svg>
+
+      <div class="map-ui">
+        <div class="map-top">
+          <div class="map-label"><b>John Muir Trail · Yosemite</b><span>Interactive map preview</span></div>
+          <div class="map-actions"><div class="iconbtn">＋</div><div class="iconbtn">⌖</div></div>
+        </div>
+        <div class="map-bottom">
+          <div class="map-legend"><b style="color:var(--orange)">━━</b> mapped trail geometry &nbsp; · &nbsp; <b>24 mi</b></div>
+          <a class="open-route" href="#app">Open in mapper.one →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap stats">
+    <div class="stat"><small>Mapped distance</small><strong>24 mi</strong></div>
+    <div class="stat"><small>Region</small><strong>Yosemite National Park</strong></div>
+    <div class="stat"><small>Allowed use</small><strong>Hiker · Pack / Saddle</strong></div>
+    <div class="stat"><small>Route provenance</small><strong>NPS public trail record</strong></div>
+  </div>
+
+  <section class="wrap content-grid" id="guide">
+    <article class="article">
+      <section class="section">
+        <div class="eyebrow">The trail in context</div>
+        <h2>A Sierra trail with a much bigger story.</h2>
+        <p>The John Muir Trail begins in Yosemite and is one of the best-known long-distance routes in the Sierra Nevada. This mapper.one page, however, is intentionally narrower: it represents a <strong>24-mile route geometry within Yosemite National Park</strong> supplied with the trail record used by mapper.one.</p>
+        <p>For planning context, the National Park Service describes the John Muir Trail from <strong>Happy Isles to Tuolumne Meadows</strong> as a 22-mile one-way hike with 5,900 feet of elevation gain. NPS says that route passes Vernal and Nevada Falls, runs below the south face of Half Dome, crosses Sunrise Meadow, passes Cathedral Peak, and descends to Tuolumne Meadows.</p>
+        <div class="callout">
+          <b>Why the numbers do not perfectly match</b>
+          mapper.one’s supplied route record is 24 miles. The NPS Happy Isles–Tuolumne route description is 22 miles. Because the supplied mapper.one record does not identify its exact endpoints in the public page data, this guide does <em>not</em> assume the two geometries are identical or attach NPS’s 5,900-foot elevation gain to the 24-mile record.
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="eyebrow">Official route context</div>
+        <h2>What hikers encounter on the Yosemite JMT.</h2>
+        <p>NPS identifies Happy Isles as the beginning of the John Muir Trail. The Yosemite Valley section climbs toward some of the park’s most recognizable scenery, including the Vernal and Nevada Fall corridor, before continuing into the high country.</p>
+        <div class="route-steps">
+          <div class="step"><div class="num">01</div><div><strong>Happy Isles</strong><span>NPS identifies Happy Isles as the trailhead at the beginning of the JMT.</span></div></div>
+          <div class="step"><div class="num">02</div><div><strong>Vernal & Nevada Falls corridor</strong><span>The JMT and Mist Trail provide access to dramatic waterfall scenery; the trails diverge beyond the Vernal Fall Footbridge.</span></div></div>
+          <div class="step"><div class="num">03</div><div><strong>High Sierra terrain</strong><span>On the NPS-described route toward Tuolumne Meadows, the trail passes below Half Dome, through Sunrise Meadow and near Cathedral Peak.</span></div></div>
+          <div class="step"><div class="num">04</div><div><strong>Tuolumne Meadows</strong><span>NPS lists the Happy Isles-to-Tuolumne section as 22 miles one way.</span></div></div>
+        </div>
+      </section>
+
+      <section class="section" id="permits">
+        <div class="eyebrow">Permits & access</div>
+        <h2>Overnight trips require planning.</h2>
+        <div class="permit-box">
+          <h3>Wilderness permits are required for overnight wilderness travel.</h3>
+          <p>For hikers continuing over Donohue Pass on the full JMT, Yosemite currently limits eligible exits and specifies which trailheads can be used. Permit rules, quotas, roads, shuttle access and seasonal conditions can change, so the current Yosemite National Park guidance should be checked before every trip.</p>
+        </div>
+        <p>NPS currently identifies <strong>Happy Isles to Past LYV (Donohue Pass eligible)</strong> and <strong>Lyell Canyon (Donohue Pass eligible)</strong> as the two trailheads that provide access to the full JMT beyond Yosemite. NPS also states that the Donohue Pass exit quota is 45 people per day.</p>
+      </section>
+
+      <section class="section">
+        <div class="eyebrow">Trailhead note</div>
+        <h2>Getting to Happy Isles.</h2>
+        <p>NPS recommends reaching the Mist and John Muir Trailhead using the Valleywide Shuttle or East Valley Shuttle. There is no parking directly at the trailhead; the closest parking is at Curry Village, about one mile away.</p>
+        <div class="callout"><b>Seasonal reality matters.</b> Spring runoff can create heavy spray and slippery footing around the waterfall corridor. High-country snow, wildfire, road access and weather can all materially change a Yosemite itinerary. Use this guide as orientation, then verify current conditions with NPS.</div>
+      </section>
+
+      <section class="section">
+        <div class="eyebrow">FAQ</div>
+        <h2>John Muir Trail questions.</h2>
+        <div class="faq">
+          <details open><summary>Is this the entire John Muir Trail?</summary><p>No. This page represents a 24-mile mapped trail record within Yosemite National Park. The complete JMT continues well beyond Yosemite.</p></details>
+          <details><summary>Where does the John Muir Trail begin?</summary><p>The National Park Service identifies Happy Isles in Yosemite Valley as the beginning of the John Muir Trail.</p></details>
+          <details><summary>How far is the JMT from Happy Isles to Tuolumne Meadows?</summary><p>NPS lists the Happy Isles-to-Tuolumne Meadows JMT route as 22 miles one way with 5,900 feet of elevation gain.</p></details>
+          <details><summary>Do I need a permit?</summary><p>A wilderness permit is required for overnight wilderness travel. JMT thru-hikers continuing over Donohue Pass must follow Yosemite’s specific trailhead eligibility and quota rules.</p></details>
+          <details><summary>Can I use this map on my phone?</summary><p>That is the purpose of mapper.one: move from trail research on the web to the mapped route on your phone. The production version of this CTA should deep-link to the same trail in the app.</p></details>
+        </div>
+      </section>
+
+      <section class="section sources" id="sources">
+        <div class="eyebrow">Primary sources</div>
+        <h2>Built from factual trail information.</h2>
+        <div class="source-item"><strong>mapper.one trail record</strong><br><a href="https://mapper.one/trails/john-muir-trail-78f23e4a">mapper.one/trails/john-muir-trail-78f23e4a</a></div>
+        <div class="source-item"><strong>Yosemite National Park — Yosemite Valley Trails</strong><br><a href="https://www.nps.gov/yose/planyourvisit/yosemite-valley-trails.htm">nps.gov/yose/planyourvisit/yosemite-valley-trails.htm</a></div>
+        <div class="source-item"><strong>Yosemite National Park — John Muir and Pacific Crest Trails</strong><br><a href="https://www.nps.gov/yose/planyourvisit/jmt.htm">nps.gov/yose/planyourvisit/jmt.htm</a></div>
+        <div class="source-item"><strong>Yosemite National Park — Mist & John Muir Trailhead</strong><br><a href="https://www.nps.gov/places/000/mist-trail-and-john-muir-trail-trailhead.htm">nps.gov/places/000/mist-trail-and-john-muir-trail-trailhead.htm</a></div>
+      </section>
+    </article>
+
+    <aside class="aside">
+      <div class="app-card" id="app">
+        <div class="eyebrow" style="color:var(--lime)">Take the map with you</div>
+        <h3>Research here. Navigate in mapper.one.</h3>
+        <p>Open this exact trail in the free mapping app and keep the route accessible from your phone.</p>
+        <div class="store-row"><a class="store" href="#"> App Store</a><a class="store" href="#">Google Play</a></div>
+      </div>
+      <div class="mini-card">
+        <h4>Editorial standard</h4>
+        <p>Facts are separated by source. Missing endpoint, elevation and condition data are not invented from the route name.</p>
+      </div>
+      <div class="mini-card">
+        <h4>Last researched</h4>
+        <p>August 20, 2026. Current rules and conditions should always be verified with the land manager.</p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="wrap">
+    <div class="bottom-cta">
+      <div><h2>Carry the trail beyond the browser.</h2><p>Open the mapped route in mapper.one and make the trail page the beginning of the trip—not the end of the search.</p></div>
+      <a href="#">Open this trail →</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">mapper.one · Trail intelligence for people who move through the real world. &nbsp; / &nbsp; Prototype trail guide concept.</div>
+</footer>
+
+<div class="mobile-cta"><span><b>John Muir Trail</b><br>24 mi · Yosemite</span><a href="#app">Open in app →</a></div>
+</body>
+</html>

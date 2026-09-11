@@ -1,0 +1,373 @@
+I reviewed the live John Muir Trail — Yosemite Segment page and compared it with the kinds of information currently ranking for John Muir Trail searches.
+
+The foundation is good, but the page is currently much better as a database-generated trail record than as an SEO landing page that attracts hikers and converts them into mapper.one app users. The biggest opportunity is to change the page from “here is what our dataset knows about this route” into “here is the useful trail page you were searching for — and mapper.one lets you take the map with you.”
+
+What is working
+
+Google can clearly understand the primary entity. You have an exact trail-oriented H1, Yosemite National Park context, a crawlable 24-mile distance, route facts, several hundred words of indexable copy, research sources, related routes, breadcrumbs, and internal links.
+
+That's a solid programmatic SEO framework, particularly if you're going to generate thousands of these pages.
+
+I also like the distinction:
+
+John Muir Trail — Yosemite Segment
+
+That's important because the famous JMT is roughly 211 miles from Yosemite Valley to Mount Whitney, while your underlying NPS route record represents a 24-mile segment.
+
+So I would not change the page to imply that this is the entire John Muir Trail.
+
+The major SEO weakness: it doesn't satisfy the searcher's intent deeply enough
+
+Right now the opening says:
+
+“John Muir Trail (NPS Public Trails) route record in Yosemite National Park. 24 mi Hiker/Pedestrian and Pack/Saddle segment centered near Mariposa County, recorded by the National Park Service.”
+
+Then much of the article essentially explains the limitations of the database record:
+
+“does not include elevation gain”
+“obtain current topographic maps”
+“record does not specify trailheads”
+“consult NPS maps”
+“does not provide detailed safety”
+“check linked sources”
+
+That's accurate, which is good, but it isn't especially useful to a person searching something like:
+
+John Muir Trail Yosemite map
+John Muir Trail Yosemite section
+John Muir Trail route
+John Muir Trail map
+JMT Yosemite trail map
+John Muir Trail distance
+John Muir Trail Yosemite hiking
+
+Competing resources are answering those questions much more directly. For example, existing JMT pages provide maps, elevations, camping locations, mileage between landmarks, permits, transportation and other actionable planning information.
+
+The mapper.one advantage should be the map
+
+This is the most important change I'd make.
+
+Your product is mapper.one. The page should revolve around the actual route.
+
+Something closer to:
+
+John Muir Trail — Yosemite Segment
+
+24-mile public trail route in Yosemite National Park, California
+
+[interactive route map]
+
+24 mi | Yosemite National Park | Hiking + Pack/Saddle
+
+Take this trail map with you
+
+View the route in mapper.one and use your phone to follow your location while you're on the trail.
+
+Get mapper.one — Free
+
+That creates a very natural progression:
+
+Google → useful trail information → map → app
+
+At the moment the page goes:
+
+Google → route database record → caveats → research → other trails
+
+The product itself isn't really part of the search journey.
+
+I'd make the interactive map enormous
+
+This is one case where I wouldn't treat the map as just another page element.
+
+I'd put it immediately underneath the introductory information and give it substantial visual space, perhaps 500–650px high on desktop.
+
+Then put an app CTA directly beneath it:
+
+Take this map on the trail
+Open the John Muir Trail route in mapper.one to follow the trail and your location from your phone. mapper.one is free to download.
+
+[App Store] [Google Play]
+
+That's an extremely understandable conversion proposition.
+
+And importantly, don't gate the web map.
+
+Let Google visitors use it. The app is the enhanced experience.
+
+I would substantially change the information architecture
+
+Rather than:
+
+Overview → Planning the route → Route notes → Safety → Sources
+
+I'd build the template around actual search intent:
+
+John Muir Trail — Yosemite Segment
+
+Short descriptive introduction.
+
+Interactive John Muir Trail Map
+
+Map + CTA.
+
+John Muir Trail Yosemite Segment at a Glance
+
+Distance
+Location
+Trail use
+Land manager
+Route source
+Elevation gain if available
+Trailheads/endpoints if reliably available
+
+About This Section of the John Muir Trail
+
+Explain what this particular 24-mile route record represents and distinguish it from the full JMT.
+
+John Muir Trail Route
+
+Describe the geography/route only to the extent supported by your source data/research.
+
+Permits & Regulations
+
+This is extremely important for this particular trail. Wilderness permits are required for overnight wilderness trips, and the rules depend upon the starting trailhead/agency.
+
+When to Hike
+
+Only include researched/current information. The broader JMT is generally most accessible in summer into early fall, although snow conditions vary substantially.
+
+Navigation & Trail Map
+
+This is where mapper.one gets another strong contextual CTA.
+
+John Muir Trail FAQs
+
+Then 5–8 highly relevant questions.
+
+Official Sources & Further Reading
+
+Nearby Trails
+
+That would be considerably stronger.
+
+The page also needs more specific geographic entities
+
+Google likes pages that establish what something is, where it is, and what it's connected to.
+
+You've currently got Yosemite National Park and Mariposa County.
+
+For this particular page, verified information could potentially establish relationships with things such as:
+
+Yosemite National Park, Happy Isles, Yosemite Valley, the Sierra Nevada, the Pacific Crest Trail, and Mount Whitney.
+
+The broader trail's northern terminus is Happy Isles in Yosemite Valley and its southern terminus is Mount Whitney.
+
+That distinction gives you an excellent SEO paragraph:
+
+Is this the entire John Muir Trail?
+
+No. This map represents a 24-mile NPS Public Trails route record within Yosemite National Park. The complete John Muir Trail extends approximately 211 miles from Happy Isles in Yosemite Valley to Mount Whitney. This page focuses specifically on the Yosemite route represented by the public NPS trail dataset.
+
+That is far more useful than repeatedly saying “this record describes…”
+
+Your current language sounds too much like generated database documentation
+
+This may actually be the biggest content-quality issue at scale.
+
+There are repeated phrases like:
+
+“This record describes…”
+
+“The record provides…”
+
+“The record does not specify…”
+
+“This record does not provide…”
+
+Humans don't search for a “route record.” They search for a trail.
+
+I'd reserve provenance information for a small section near the bottom:
+
+About this trail data
+
+This route is based on the NPS Public Trails dataset. Trail information can change; verify closures, permits and current conditions with the appropriate land manager before your trip.
+
+Then write the rest of the page normally.
+
+That single change would make these pages feel much less programmatic.
+
+There's also a conversion problem
+
+This surprised me.
+
+Your navigation contains Get the App, but there isn't a meaningful contextual app CTA within the trail content itself.
+
+For an SEO strategy specifically intended to acquire app users, I'd consider that a major missed opportunity.
+
+You have at least three natural conversion points:
+
+Immediately under map
+
+Take this trail map with you.
+
+After route/planning content
+
+Planning to hike this trail? Save the route to mapper.one.
+
+Sticky mobile CTA
+
+Open in mapper.one
+
+The last one could be especially powerful.
+
+On mobile, something like:
+
+John Muir Trail · 24 mi
+Open in mapper.one →
+
+could remain subtly anchored to the bottom of the screen.
+
+If the app is installed, deep-link into the route.
+
+If it isn't, send them to an interstitial:
+
+Open the John Muir Trail in mapper.one
+
+Follow the mapped route from your phone.
+
+Download Free
+
+Available for iPhone / Android
+
+That's much more intentional acquisition architecture.
+
+Programmatic SEO: this could become very large
+
+The JMT page itself isn't really the interesting part to me.
+
+The template is.
+
+If you have thousands of public trail records, I'd build the system so every route can generate a page targeting:
+
+[Trail Name]
+
+[Trail Name] map
+
+[Trail Name] trail map
+
+[Trail Name] [Park]
+
+[Trail Name] hiking
+
+[Trail Name] distance
+
+[Trail Name] route
+
+[Trail Name] GPS
+
+without stuffing those phrases artificially.
+
+Your title tag could follow something like:
+
+John Muir Trail Yosemite Segment: Map, Route & Trail Guide | mapper.one
+
+Description:
+
+View the 24-mile John Muir Trail route through Yosemite National Park, get trail details and open the map in the free mapper.one mapping app.
+
+H1:
+
+John Muir Trail — Yosemite Segment
+
+That's a much stronger alignment between SERP intent and product intent.
+
+Add Trail structured data where possible
+
+I'd also inspect your current JSON-LD implementation.
+
+At minimum I'd want the page graph to establish:
+
+BreadcrumbList
+
+WebPage
+
+Place / TouristAttraction where appropriate
+
+and potentially appropriate geographic data for the route.
+
+The breadcrumb relationship should clearly establish:
+
+Trails → California → Yosemite National Park → John Muir Trail
+
+rather than just:
+
+Trail Guides → Yosemite National Park
+
+You can then create indexable hubs:
+
+/trails/california/
+/trails/yosemite-national-park/
+/trails/mariposa-county/
+
+That starts building an actual trail knowledge graph rather than a collection of isolated URLs.
+
+I'd also add FAQs — but for users, not just schema
+
+For this page:
+
+How long is the John Muir Trail in Yosemite?
+Is this the entire John Muir Trail?
+Where does the John Muir Trail start?
+Do you need a permit for the John Muir Trail?
+Can you hike the John Muir Trail without a permit?
+What is the best time to hike the John Muir Trail?
+Where does the John Muir Trail end?
+Is there a map of the John Muir Trail?
+
+The answers should be grounded in authoritative sources, and time-sensitive permit/closure information should clearly point people toward NPS/USFS sources. For example, current Forest Service information says wilderness permits are required year-round for overnight trips in the relevant wilderness areas.
+
+The last FAQ gives you the perfect product answer:
+
+Is there a map of the John Muir Trail?
+
+Yes. The interactive map above shows the 24-mile Yosemite route represented on this page. You can also open the route in the free mapper.one app to use the map from your phone.
+
+That's SEO content and acquisition copy without feeling like an ad.
+
+One thing I would protect
+
+I would not allow the AI enrichment process to fill missing fields by inference.
+
+Your current page correctly says elevation gain isn't available rather than making something up.
+
+Keep that philosophy.
+
+Instead, establish a hierarchy:
+
+Source route data → factual route geometry/distance/type
+Authoritative research → NPS/USFS permits, access, regulations
+Derived geometry → calculated elevation/distance where technically possible
+AI → synthesis/explanation only
+
+That gives you a defensible programmatic content system.
+
+My priority order
+
+If I were handing this to the mapper.one developer, I'd prioritize the work like this:
+
+Make the interactive route map the centerpiece of every trail page.
+Add "Open in mapper.one / Download Free" conversion architecture.
+Rewrite the content template around hikers' questions rather than dataset terminology.
+Add a clear distinction between the displayed segment and larger trails sharing its name.
+Add verified permit/access/season information from authoritative sources.
+Generate useful FAQ content.
+Improve title/meta templates around [trail] + map + location.
+Build park/state/county trail hub pages and stronger breadcrumbs.
+Add/upgrade structured data.
+Deep-link each SEO trail page directly into the corresponding route in the app.
+Add a sticky mobile Open in mapper.one CTA.
+Track Google landing → map interaction → app CTA → store → app route open as the actual SEO conversion funnel.
+
+I'd rate the current implementation around 6/10 for programmatic SEO foundation, but probably only 2–3/10 for SEO → app acquisition. The good news is that you don't need a fundamentally different product. The trail/map data you already have is the thing that makes the SEO strategy compelling; the template just isn't capitalizing on it yet.
+
+The most important conceptual change is: don't build encyclopedia pages about trails and then advertise mapper.one. Build useful interactive trail-map pages where downloading mapper.one is the natural next step.

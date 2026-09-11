@@ -1,0 +1,46 @@
+modules = ["nodejs-24", "python-3.11", "java-graalvm22.3", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+integrations = ["stripe:1.0.0"]
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 60000
+
+[userenv]
+
+[userenv.production]
+SITE_EXPO_DEV_DOMAIN = "a0aa48b6-0939-4c0f-b4aa-c830ee99841f-00-3gl6y6lvp37tj.expo.kirk.replit.dev"
+EXPO_DEV_URL = "exp://a0aa48b6-0939-4c0f-b4aa-c830ee99841f-00-3gl6y6lvp37tj.expo.kirk.replit.dev"
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 80
+
+[[ports]]
+localPort = 18115
+externalPort = 3001
+
+[[ports]]
+localPort = 21238
+externalPort = 3000
+
+[nix]
+channel = "stable-25_05"

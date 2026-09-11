@@ -1,0 +1,932 @@
+Mapper.one — Paid Private Route Sharing
+
+Objective
+
+Add a simple paid private-sharing system to mapper.one that allows anyone to create routes and waypoints for free, while monetizing private sharing for professional and collaborative use.
+
+The core model:
+
+Create for free → Pay once to make private/shareable → Share with anyone → Recipient opens exact route
+
+Initial price:
+
+$19 per private route/project
+
+Access period:
+
+180 days
+
+No subscription is required.
+
+The most important requirement is simplicity. A contractor, arborist, trail builder, landscaper or recreational user should be able to create a map, pay, and send it to their crew within approximately one minute.
+
+---
+
+1. Product Model
+
+Mapper.one should support two primary sharing modes.
+
+Public Route — Free
+
+Public routes remain free.
+
+Public means genuinely public:
+
+- Anyone can view
+- Public share URL
+- May appear on mapper.one public profiles/discovery
+- Intended for recreation and community sharing
+- No privacy guarantee
+
+Examples:
+
+- Mountain-bike route
+- Hiking route
+- Trail-running loop
+- Public trail project
+- Scenic drive
+
+Private Project — $19 / 180 Days
+
+A private project is intended for crews, clients, organizations and businesses.
+
+Includes:
+
+- Private/unlisted route
+- All associated waypoints
+- Photos
+- Notes
+- Secure share URL
+- Unlimited recipients
+- App deep linking
+- 180 days of shared access
+- Creator can revoke sharing
+- Route does not appear publicly
+
+The recipient should never need to pay.
+
+Only the creator pays to activate private sharing.
+
+---
+
+2. Primary User Flow
+
+The entire workflow should feel like:
+
+CREATE → SHARE → PAY → SEND
+
+Step 1 — Create Normally
+
+User creates a route using the existing mapper.one workflow.
+
+Example:
+
+Oak Ridge Trail Rehabilitation
+
+Route contains:
+
+- GPS track
+- 9 tree-removal waypoints
+- 4 drainage issues
+- 3 trail features
+- Photos
+- Notes
+
+Nothing about route creation requires payment.
+
+---
+
+3. Share Button
+
+When the route is complete, creator taps:
+
+Share
+
+Present two clear choices.
+
+Share Publicly
+
+Free
+
+Anyone can discover and view this route.
+
+[Publish Public Route]
+
+Share Privately
+
+$19 · 180 days
+
+Keep this route private and securely share it with your crew, clients or collaborators.
+
+[Create Private Share]
+
+Do not bury the difference in explanatory text.
+
+The user should immediately understand:
+
+Public = free
+
+Private = $19
+
+---
+
+4. Private Share Checkout
+
+Selecting:
+
+Create Private Share
+
+should open a very lightweight checkout.
+
+Display:
+
+Share this project privately
+
+Oak Ridge Trail Rehabilitation
+
+Includes:
+
+✓ Route
+✓ Waypoints
+✓ Photos
+✓ Notes
+✓ Unlimited recipients
+✓ Private access for 180 days
+
+$19 one-time
+
+No subscription.
+
+[Pay & Create Private Link]
+
+Use Stripe Checkout or the appropriate Stripe mobile payment flow depending on platform/payment requirements.
+
+The server must determine price. Never trust a price submitted by the client.
+
+---
+
+5. Payment Architecture
+
+Create a server-side private-share purchase record before sending the user to payment.
+
+Suggested object:
+
+private_share
+
+id
+route_id
+creator_user_id
+status
+amount
+currency
+stripe_checkout_session_id
+stripe_payment_intent_id
+share_token
+created_at
+activated_at
+expires_at
+revoked_at
+
+Initial status:
+
+pending_payment
+
+After verified payment:
+
+active
+
+Set:
+
+activated_at = successful payment timestamp
+expires_at = activated_at + 180 days
+
+Generate a cryptographically secure share token.
+
+Do not use sequential IDs as private access credentials.
+
+---
+
+6. Stripe Payment Confirmation
+
+Do not activate private sharing solely because the browser redirects to a success URL.
+
+Stripe webhook confirmation should be authoritative.
+
+Expected flow:
+
+Create Checkout Session
+        ↓
+User pays
+        ↓
+Stripe webhook
+        ↓
+Server verifies successful payment
+        ↓
+private_share.status = active
+        ↓
+Generate/activate private URL
+        ↓
+Route becomes privately shareable
+
+The success page can query the server for activation status if the webhook has not yet arrived.
+
+Show:
+
+Preparing your private link…
+
+rather than failing if webhook processing takes a few seconds.
+
+Payment processing must be idempotent so duplicate webhook events cannot create multiple private shares or incorrectly extend expiration.
+
+---
+
+7. Payment Success Screen
+
+This is one of the most important screens.
+
+Immediately after successful activation show:
+
+Your private project is ready
+
+Oak Ridge Trail Rehabilitation
+
+Private through February 15, 2027
+
+Share with your crew
+
+"mapper.one/s/AbC7xK29"
+
+[Copy Link]
+
+[Share]
+
+The native Share button should invoke the iOS share sheet so the creator can immediately send it through:
+
+- Messages
+- Email
+- Slack
+- Teams
+- WhatsApp
+- AirDrop
+- Copy Link
+- Other installed applications
+
+Do not require the creator to manually copy/paste unless they want to.
+
+---
+
+8. Suggested Share Message
+
+When using the native share sheet, prepopulate something simple:
+
+«Oak Ridge Trail Rehabilitation
+
+I've shared a private mapper.one project with you. Open the link to see the route, waypoints, photos and field notes.
+
+[PRIVATE LINK]»
+
+Avoid marketing copy.
+
+The recipient should immediately understand why they're receiving it.
+
+---
+
+9. The Private Share URL
+
+Use a short canonical URL structure:
+
+https://mapper.one/s/{secure-token}
+
+Example:
+
+https://mapper.one/s/AbC7xK29
+
+This URL becomes the permanent entry point for that private share during its active period.
+
+Do not share an App Store URL directly.
+
+Always share the mapper.one URL.
+
+This is important because mapper.one can then intelligently determine what happens next.
+
+---
+
+10. Recipient Has Mapper.one Installed
+
+Configure the private URL as an iOS Universal Link.
+
+If mapper.one is installed:
+
+User taps private link
+        ↓
+iOS recognizes mapper.one Universal Link
+        ↓
+Mapper.one opens
+        ↓
+App receives share token
+        ↓
+API validates token
+        ↓
+Exact private route opens
+
+The user should not land on the mapper.one home screen and have to find the route.
+
+The destination is always:
+
+the shared route.
+
+Example:
+
+mapper.one
+   ↓
+Oak Ridge Trail Rehabilitation
+
+---
+
+11. Recipient Does Not Have Mapper.one Installed
+
+This flow is equally important.
+
+If the recipient taps:
+
+mapper.one/s/AbC7xK29
+
+and mapper.one is not installed, open a mobile web landing page.
+
+Eric shared a private map with you
+
+Oak Ridge Trail Rehabilitation
+
+6.2 miles · 24 waypoints
+
+Shared privately with mapper.one.
+
+[Get mapper.one on the App Store]
+
+Supporting text:
+
+Install mapper.one to view the route, waypoints, photos and field notes.
+
+The page should retain the original share token.
+
+---
+
+12. App Installation → Return to Exact Route
+
+This is critical.
+
+We do not want:
+
+Share link
+↓
+App Store
+↓
+Install
+↓
+Mapper.one homepage
+↓
+Recipient has no idea where route went
+
+We want:
+
+Private Link
+↓
+App Store
+↓
+Install
+↓
+Open Mapper.one
+↓
+Oak Ridge Trail Rehabilitation
+
+Implement deferred deep linking or the best supported equivalent within the current mapper.one architecture.
+
+The original:
+
+share_token
+
+must survive the install handoff wherever technically possible.
+
+If true deferred deep linking cannot reliably be supported using the selected infrastructure, provide a fallback.
+
+---
+
+13. Simple Fallback
+
+The web landing page should always have:
+
+Copy Access Link
+
+The recipient can install mapper.one and then reopen the original message/link.
+
+Because the URL is a Universal Link, the second tap opens the application directly to the project.
+
+This makes the system robust even when deferred deep linking fails.
+
+---
+
+14. Recipient Authentication
+
+Do not make account creation an unnecessary obstacle.
+
+Preferred recipient flow:
+
+Tap link
+↓
+Open mapper.one
+↓
+View private project
+
+If the current data/security architecture requires authentication, use the least intrusive possible method.
+
+However, simply possessing a private link can function as access authorization for the initial MVP.
+
+This is similar conceptually to:
+
+Anyone with this private link can view.
+
+Recipients shouldn't need to be manually added by email.
+
+That would make the workflow substantially less convenient for field crews.
+
+---
+
+15. Route Screen for Recipient
+
+A private shared route should clearly indicate its context.
+
+Example:
+
+Oak Ridge Trail Rehabilitation
+
+Private Project
+
+Shared by Eric
+
+[MAP]
+
+Route
+
+6.2 miles
+
+24 Field Locations
+
+🌳 9 Tree Removals
+💧 6 Drainage Issues
+⚠️ 5 Hazards
+🛠 4 Trail Features
+
+Recipients can tap any waypoint.
+
+---
+
+16. Waypoint Experience
+
+Selecting a waypoint should show:
+
+Tree 7
+
+Remove
+
+[PHOTO]
+
+Dead tree approximately 18 inches diameter.
+
+Leaning toward trail.
+
+Equipment can approach from recorded access route.
+
+[View on Map]
+
+[Directions / Navigate]
+
+If mapper.one already supports waypoint photos and notes, preserve the existing underlying implementation rather than rebuilding it.
+
+---
+
+17. Recipient Permissions
+
+Initial MVP recipients should be:
+
+View-only
+
+They can:
+
+- View route
+- View current position
+- View waypoints
+- View photos
+- Read notes
+- Navigate/find locations
+
+They cannot:
+
+- Delete waypoints
+- Modify route
+- Change notes
+- Add photos
+- Alter creator's original project
+
+This greatly simplifies access control.
+
+Collaborative editing can come later.
+
+---
+
+18. Creator Management
+
+Add a simple section to the route/project:
+
+Private Sharing
+
+Status: Active
+
+Expires:
+
+February 15, 2027
+
+Shared link:
+
+"mapper.one/s/AbC7xK29"
+
+[Share Again]
+
+[Copy Link]
+
+[Revoke Access]
+
+Eventually:
+
+[Extend 180 Days]
+
+The creator should never need to search through receipts or Stripe information to retrieve the link.
+
+---
+
+19. Expiration
+
+At 180 days:
+
+private_share.status = expired
+
+The underlying creator route should not be deleted.
+
+Only private external access expires.
+
+Creator retains the project in mapper.one.
+
+If someone follows the expired URL:
+
+This private project has expired.
+
+Oak Ridge Trail Rehabilitation
+
+Private access to this project ended on February 15, 2027.
+
+If appropriate:
+
+Ask the project owner to reactivate sharing.
+
+Do not expose route data, photographs or waypoints.
+
+---
+
+20. Renewal
+
+Build the database architecture to support renewal even if it isn't exposed in V1.
+
+Potential future option:
+
+Extend Private Sharing — $9 / 180 days
+
+or simply another $19 activation.
+
+Do not hard-code assumptions that a route can only have one payment.
+
+Maintain payment history separately from the route itself.
+
+Suggested:
+
+private_share
+private_share_payment
+
+This allows multiple renewals later.
+
+---
+
+21. Public → Private Conversion
+
+A creator may initially make something public and later decide it needs to be private.
+
+Support:
+
+Make Private
+
+When selected:
+
+«Making this project private will remove it from public discovery.»
+
+[Continue — $19]
+
+After successful payment:
+
+- Remove public access
+- Remove public discovery/indexing
+- Activate private share
+- Generate private URL
+
+Be particularly careful with cached/public URLs and search indexing.
+
+---
+
+22. Private → Public
+
+If a paid project is later made public, warn:
+
+«This will make the route, waypoints, photos and notes publicly accessible.»
+
+Require confirmation.
+
+Do not refund the private-sharing purchase automatically.
+
+---
+
+23. Security Requirements
+
+Private routes may contain commercially or personally sensitive location information.
+
+At minimum:
+
+- Cryptographically secure share tokens
+- HTTPS only
+- Server-side authorization
+- No sequential route IDs granting access
+- Private routes excluded from public APIs
+- Private routes excluded from search
+- "noindex" on private web landing pages
+- Do not expose GPS/project data in page metadata
+- Validate expiration server-side
+- Validate revocation server-side
+- Rate-limit token endpoints
+- Never trust client payment state
+
+Possession of the token grants view access, but the underlying route ID alone must never do so.
+
+---
+
+24. Analytics
+
+Instrument the funnel.
+
+Track:
+
+route_created
+share_clicked
+public_share_selected
+private_share_selected
+checkout_started
+checkout_completed
+private_share_activated
+private_link_copied
+native_share_opened
+private_link_opened
+app_install_cta_clicked
+private_route_opened_in_app
+private_share_expired
+
+We particularly want to understand:
+
+Commercial conversion
+
+Private share purchases
+÷
+users attempting to share
+
+Recipient acquisition
+
+App Store clicks
+÷
+private-link recipients without app
+
+and eventually:
+
+New mapper.one users
+÷
+private links opened
+
+This will tell us whether paid sharing also functions as a customer-acquisition engine.
+
+---
+
+25. Important UX Principle
+
+Do not make mapper.one feel like:
+
+"You hit the paywall."
+
+Make it feel like:
+
+"Your project is finished. How do you want to share it?"
+
+Free recreational/public sharing remains part of mapper.one.
+
+The paid product is privacy and professional project distribution.
+
+---
+
+26. MVP Scope
+
+Build now
+
+- Public/private sharing selector
+- $19 private project
+- 180-day access
+- Stripe one-time payment
+- Server-side payment verification
+- Private share records
+- Secure tokens
+- "mapper.one/s/{token}" URLs
+- Payment confirmation screen
+- Copy link
+- Native iOS share sheet
+- Universal Links
+- App Store fallback page
+- Route-specific deep linking
+- Recipient view-only access
+- Expiration handling
+- Revocation
+- Basic analytics
+
+Do not build yet
+
+- Seat billing
+- Company accounts
+- Crew management
+- Role permissions
+- Collaborative editing
+- Assignments
+- Comments
+- Enterprise SSO
+- Complex GIS functionality
+- Subscription billing
+- Per-recipient charges
+
+Keep V1 extremely simple.
+
+---
+
+27. Desired End-to-End Experience
+
+The benchmark should be whether this entire interaction feels obvious without instructions.
+
+Creator
+
+Finish Route
+      ↓
+Share
+      ↓
+Private — $19
+      ↓
+Pay
+      ↓
+✓ Private Project Ready
+      ↓
+Share
+      ↓
+Messages → Crew
+
+Recipient with mapper.one
+
+Text Message
+      ↓
+Tap Link
+      ↓
+Mapper.one Opens
+      ↓
+Exact Project Opens
+
+Recipient without mapper.one
+
+Text Message
+      ↓
+Tap Link
+      ↓
+Project Landing Page
+      ↓
+Get Mapper.one
+      ↓
+Install
+      ↓
+Open Shared Project
+
+That is the product.
+
+Everything else should be secondary to making those three flows exceptionally reliable and fast.
+
+---
+
+28. Product Copy
+
+Use consistent terminology throughout the implementation.
+
+Free
+
+Public Route
+
+«Publish this route for anyone to discover and view.»
+
+Paid
+
+Private Project
+
+«Privately share this route, waypoints, photos and notes with your crew or collaborators for 180 days.»
+
+Purchase CTA
+
+Create Private Share — $19
+
+Success
+
+Your private project is ready.
+
+Primary success CTA
+
+Share with Your Crew
+
+Recipient CTA
+
+Open in mapper.one
+
+or, when not installed:
+
+Get mapper.one
+
+Avoid terms such as:
+
+- Unlock
+- Premium
+- Upgrade
+- Pro-only
+- Paywall
+
+We are selling a specific service rather than restricting the core mapping application.
+
+---
+
+29. Architecture Principle
+
+Keep these concepts separate in the data model:
+
+ROUTE
+The actual user-created geographic content.
+
+SHARE
+The permission/access mechanism.
+
+PAYMENT
+The transaction that activates private sharing.
+
+Do not make:
+
+route.is_paid = true
+
+the core architecture.
+
+A route may eventually have multiple shares, renewals, permissions or commercial workflows.
+
+Think:
+
+User
+  ↓
+Route
+  ↓
+Private Share
+  ↓
+Payment(s)
+  ↓
+Share Token
+  ↓
+Recipient Access
+
+That structure gives mapper.one room to eventually support Teams without having to rebuild the paid-sharing system.
+
+---
+
+Success Criteria
+
+The feature is successful when a new user can:
+
+1. Download mapper.one.
+2. Create and record a route.
+3. Add GPS waypoints.
+4. Add photographs and notes.
+5. Tap Share.
+6. Purchase a $19 private share.
+7. Receive their private link immediately.
+8. Send it using Messages or another application.
+9. Have someone else tap that link.
+10. Open the exact private project with essentially no explanation required.
+
+The recipient should never have to search for the route, enter a project code, ask the creator for access, purchase anything, or understand how mapper.one works before seeing the shared project.
+
+That frictionless handoff should be treated as the defining feature of the commercial mapper.one experience.

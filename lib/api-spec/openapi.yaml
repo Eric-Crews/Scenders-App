@@ -1,0 +1,3520 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: community
+    description: Community-shared map datasets
+  - name: Auth
+    description: Browser and mobile authentication endpoints.
+  - name: me
+    description: Authenticated user data — waypoints, datasets, regions, tracks
+  - name: Storage
+    description: Object storage upload and serving endpoints.
+  - name: blog
+    description: AI-generated trip blog posts derived from published tracks.
+  - name: feedback
+    description: Anonymous community feedback and discussion board with upvotes and replies.
+  - name: donate
+    description: Optional pay-what-you-want donations to fund development via Stripe Checkout.
+  - name: support
+    description: Private support requests for mapper.one users.
+  - name: live
+    description: Private, token-based live activity sharing by SMS.
+paths:
+  /auth/user:
+    get:
+      tags: [Auth]
+      operationId: getCurrentAuthUser
+      summary: Get the currently authenticated user
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: Auth status resolved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUserEnvelope'
+  /auth/account:
+    delete:
+      tags: [Auth]
+      operationId: deleteCurrentAccount
+      summary: Permanently delete the signed-in account and its cloud-synced data
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: Account and cloud-synced data were deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDeletionSuccess'
+        '401':
+          description: Sign-in is required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /auth/data:
+    delete:
+      tags: [Auth]
+      operationId: deleteCurrentData
+      summary: Delete selected personal cloud data without deleting the account
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataDeletionInput'
+      responses:
+        '200':
+          description: Selected personal cloud data were deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataDeletionResponse'
+        '400':
+          description: The requested deletion scope is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Sign-in is required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /login:
+    get:
+      tags: [Auth]
+      operationId: beginBrowserLogin
+      summary: Start the browser OIDC login flow
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to the OIDC authorization endpoint.
+  /callback:
+    get:
+      tags: [Auth]
+      operationId: handleBrowserLoginCallback
+      summary: Complete the browser OIDC login flow
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema: { type: string }
+        - name: state
+          in: query
+          required: false
+          schema: { type: string }
+        - name: iss
+          in: query
+          required: false
+          schema: { type: string, format: uri }
+      responses:
+        '302':
+          description: Redirect to the returnTo path on success.
+  /logout:
+    get:
+      tags: [Auth]
+      operationId: logoutBrowserSession
+      summary: Clear the session and begin OIDC logout
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '302':
+          description: Redirect to the OIDC provider logout URL.
+  /mobile-auth/token-exchange:
+    post:
+      tags: [Auth]
+      operationId: exchangeMobileAuthorizationCode
+      summary: Exchange a mobile OIDC code for a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MobileTokenExchangeRequest'
+      responses:
+        '200':
+          description: Session created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileTokenExchangeSuccess'
+        '400':
+          description: Missing or invalid required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Token did not contain usable claims.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Token exchange failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /mobile-auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logoutMobileSession
+      summary: Delete a mobile session token
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      responses:
+        '200':
+          description: Logout processed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutSuccess'
+  /me/waypoints:
+    get:
+      tags: [me]
+      operationId: listMyWaypoints
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      responses:
+        '200':
+          description: List of waypoints
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Waypoint' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/waypoints/{id}:
+    put:
+      tags: [me]
+      operationId: upsertMyWaypoint
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WaypointInput' }
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Waypoint' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    delete:
+      tags: [me]
+      operationId: deleteMyWaypoint
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/datasets:
+    get:
+      tags: [me]
+      operationId: listMyDatasets
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      responses:
+        '200':
+          description: List of dataset summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/UserDatasetSummary' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/datasets/{id}:
+    get:
+      tags: [me]
+      operationId: getMyDataset
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Dataset detail with geojson
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserDataset' }
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    put:
+      tags: [me]
+      operationId: upsertMyDataset
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserDatasetInput' }
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserDatasetSummary' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    delete:
+      tags: [me]
+      operationId: deleteMyDataset
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/regions:
+    get:
+      tags: [me]
+      operationId: listMyRegions
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      responses:
+        '200':
+          description: List of offline region metadata
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/UserOfflineRegion' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/regions/{id}:
+    put:
+      tags: [me]
+      operationId: upsertMyRegion
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserOfflineRegionInput' }
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserOfflineRegion' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    delete:
+      tags: [me]
+      operationId: deleteMyRegion
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/tracks:
+    get:
+      tags: [me]
+      operationId: listMyTracks
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      responses:
+        '200':
+          description: List of track summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TrackSummary' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/tracks/{id}:
+    get:
+      tags: [me]
+      operationId: getMyTrack
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Track detail with points
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Track' }
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    put:
+      tags: [me]
+      operationId: upsertMyTrack
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TrackInput' }
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrackSummary' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    delete:
+      tags: [me]
+      operationId: deleteMyTrack
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/tracks/{id}/share:
+    post:
+      tags: [me]
+      operationId: shareMyTrack
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShareTrackInput' }
+      responses:
+        '200':
+          description: Share link created or updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShareTrackResponse' }
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    delete:
+      tags: [me]
+      operationId: unshareMyTrack
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Sharing revoked
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/live-activities:
+    post:
+      tags: [live]
+      operationId: createMyLiveActivity
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateLiveActivityInput' }
+      responses:
+        '201':
+          description: Live activity created. The response states whether its private SMS was accepted for delivery.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LiveActivityOwner' }
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '429':
+          description: Too many SMS requests
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /live-activities:
+    post:
+      tags: [live]
+      operationId: createAnonymousLiveActivity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateLiveActivityInput' }
+      responses:
+        '201':
+          description: Live activity created. The response states whether its private SMS was accepted for delivery.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LiveActivityOwner' }
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '429':
+          description: Too many SMS requests
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/live-activities/{id}:
+    get:
+      tags: [live]
+      operationId: getMyLiveActivity
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/LiveOwnerCapabilityHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Owner activity state, including inbox messages.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LiveActivityOwner' }
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/live-activities/{id}/points:
+    post:
+      tags: [live]
+      operationId: uploadMyLiveActivityPoints
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/LiveOwnerCapabilityHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LiveActivityPointBatchInput' }
+      responses:
+        '200':
+          description: Points accepted (duplicate client ids are safe).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LiveActivityOwner' }
+        '400':
+          description: Invalid points or activity already ended
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/live-activities/{id}/waypoints:
+    post:
+      tags: [live]
+      operationId: uploadMyLiveActivityWaypoint
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/LiveOwnerCapabilityHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LiveActivityWaypointInput' }
+      responses:
+        '201':
+          description: Private waypoint shared with this live activity.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LiveActivityOwner' }
+        '400':
+          description: Invalid waypoint
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/live-activities/{id}/waypoint-photo-upload:
+    post:
+      tags: [live]
+      operationId: requestMyLiveActivityWaypointPhotoUpload
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/LiveOwnerCapabilityHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LiveActivityPhotoUploadInput' }
+      responses:
+        '200':
+          description: Short-lived private photo upload URL.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LiveActivityPhotoUpload' }
+        '400':
+          description: Invalid image upload metadata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/live-activities/{id}/messages:
+    post:
+      tags: [live]
+      operationId: sendMyLiveActivityMessage
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/LiveOwnerCapabilityHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LiveActivityOwnerMessageInput' }
+      responses:
+        '201':
+          description: Message accepted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LiveActivityMessage' }
+  /me/live-activities/{id}/end:
+    post:
+      tags: [live]
+      operationId: endMyLiveActivity
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/LiveOwnerCapabilityHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Activity is now a completed view-only page.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LiveActivityOwner' }
+  /me/live-activities/{id}/revoke:
+    post:
+      tags: [live]
+      operationId: revokeMyLiveActivity
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/LiveOwnerCapabilityHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Link invalidated.
+  /shared/live/{token}:
+    get:
+      tags: [live]
+      operationId: getSharedLiveActivity
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Private live activity data for the token holder.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LiveActivityPublic' }
+        '404':
+          description: Not found or link revoked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /shared/live/{token}/waypoints/{waypointId}/photo:
+    get:
+      tags: [live]
+      operationId: getSharedLiveActivityWaypointPhoto
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+        - in: path
+          name: waypointId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Token-protected waypoint photo.
+          content:
+            image/*:
+              schema: { type: string, format: binary }
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /shared/live/{token}/messages:
+    post:
+      tags: [live]
+      operationId: sendSharedLiveActivityMessage
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LiveActivityMessageInput' }
+      responses:
+        '201':
+          description: Message accepted for the recorder.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LiveActivityMessageReceipt' }
+        '400':
+          description: Activity ended or invalid input
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /shared/tracks/{token}:
+    get:
+      tags: [shared]
+      operationId: getSharedTrack
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Shared track with points
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SharedTrack' }
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/tracks/{id}/private-projects:
+    get:
+      tags: [me]
+      operationId: listMyTrackPrivateProjects
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Private projects created for this route
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PrivateProject' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    post:
+      tags: [me]
+      operationId: createPrivateProjectCheckout
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PrivateProjectCheckoutInput' }
+      responses:
+        '200':
+          description: Stripe Checkout session for a private project
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PrivateProjectCheckout' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '404':
+          description: Route not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '503':
+          description: Stripe is unavailable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/tracks/{id}/private-projects/test:
+    post:
+      tags: [me]
+      operationId: createBetaPrivateProject
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Beta test private project activated without payment
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PrivateProject' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '403':
+          description: Beta access is not enabled for this account
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '404':
+          description: Route not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/beta/private-sharing:
+    get:
+      tags: [me]
+      operationId: getBetaPrivateSharingAccess
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      responses:
+        '200':
+          description: Whether the signed-in account may create a beta test private project
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BetaPrivateSharingAccess' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /leads/teams-early-access:
+    post:
+      tags: [leads]
+      operationId: createTeamsEarlyAccessLead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TeamsEarlyAccessInput' }
+      responses:
+        '200':
+          description: Existing lead confirmed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TeamsEarlyAccessResponse' }
+        '201':
+          description: Lead created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TeamsEarlyAccessResponse' }
+        '400':
+          description: Invalid email or missing consent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/private-project-photos/upload:
+    post:
+      tags: [me]
+      operationId: requestPrivateProjectPhotoUpload
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UploadUrlRequest' }
+      responses:
+        '200':
+          description: Presigned URL for a private project photo upload
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UploadUrlResponse' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/private-projects/{id}:
+    get:
+      tags: [me]
+      operationId: getMyPrivateProject
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Current paid private-project status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PrivateProject' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '404':
+          description: Private project not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    delete:
+      tags: [me]
+      operationId: revokeMyPrivateProject
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Private project revoked
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '404':
+          description: Private project not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /me/private-projects/{id}/confirm:
+    post:
+      tags: [me]
+      operationId: confirmMyPrivateProject
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PrivateProjectConfirmationInput' }
+      responses:
+        '200':
+          description: Current paid private-project status after server-side payment verification
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PrivateProject' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '404':
+          description: Private project not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /private-projects/{token}:
+    get:
+      tags: [shared]
+      operationId: getPrivateProjectRoute
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Active private project route and linked field context
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PrivateProjectContent' }
+        '404':
+          description: Not found, expired, or revoked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /private-projects/{token}/waypoints/{waypointId}/photo:
+    get:
+      tags: [shared]
+      operationId: getPrivateProjectWaypointPhoto
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+        - in: path
+          name: waypointId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Photo linked to an active private project waypoint
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+        '404':
+          description: Not found, expired, or revoked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /app-config:
+    get:
+      operationId: getAppConfig
+      tags: [app]
+      summary: Client app configuration
+      description: Returns runtime configuration for the site, including the current Expo Go dev URL (null in production when no Expo dev server is running).
+      responses:
+        "200":
+          description: App config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppConfig"
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /elevation:
+    post:
+      operationId: computeElevations
+      tags: [community]
+      summary: Look up ground elevation for a list of coordinates
+      description: Proxies a free open elevation service. Returns one elevation (meters) per input point, or null where unavailable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ElevationInput"
+      responses:
+        "200":
+          description: Elevations resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ElevationResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /community/regions:
+    get:
+      operationId: listCommunityRegions
+      tags: [community]
+      summary: List community library regions with aggregate stats
+      description: >-
+        Returns the set of regions (US states and countries) that have published
+        datasets, each with a count, total file size, and total route distance.
+        Datasets whose region could not be determined are omitted.
+      responses:
+        "200":
+          description: List of regions with aggregate stats, most datasets first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CommunityRegionSummary"
+  /community/supportal/status:
+    get:
+      operationId: getSupportalStatus
+      tags: [community]
+      summary: Check Supportal for newly available trails
+      description: >-
+        Returns how many GPX trails the upstream Supportal API currently offers,
+        how many are already imported into the community library, and how many are
+        new. The upstream list is cached briefly server-side so repeated checks are
+        cheap. No import happens.
+      responses:
+        "200":
+          description: Supportal availability counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportalStatus"
+        "502":
+          description: Upstream Supportal API was unreachable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /community/supportal/sync:
+    post:
+      operationId: syncSupportal
+      tags: [community]
+      summary: Import new Supportal trails into the community library
+      description: >-
+        Downloads and parses a batch of not-yet-imported Supportal GPX trails and
+        inserts them into the community library. Safe to re-run: already-imported
+        trails are skipped. Returns how many were imported, how many failed to
+        parse, and how many new trails still remain.
+      responses:
+        "200":
+          description: Import batch processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportalSyncResult"
+        "409":
+          description: A Supportal sync is already in progress.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "502":
+          description: Upstream Supportal API was unreachable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /community/overpass/status:
+    get:
+      operationId: getOverpassStatus
+      tags: [community]
+      summary: List US states with imported overlanding road data
+      responses:
+        "200":
+          description: Import status per state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OverpassStatus"
+  /community/overpass/sync:
+    post:
+      operationId: syncOverpass
+      tags: [community]
+      summary: Import or re-import overlanding roads for a US state from OpenStreetMap
+      description: >-
+        Queries the Overpass API for unpaved roads and tracks in the given US
+        state, then upserts a single community dataset of kind "road". Safe to
+        re-run: re-importing a state deletes the old dataset and replaces it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OverpassSyncBody"
+      responses:
+        "200":
+          description: Import completed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OverpassSyncResult"
+        "409":
+          description: An Overpass sync is already in progress.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "502":
+          description: Upstream Overpass API was unreachable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /community/datasets:
+    get:
+      operationId: listCommunityDatasets
+      tags: [community]
+      summary: List community datasets
+      description: >-
+        Returns dataset metadata only (no geojson payload). Use the detail
+        endpoint to download. When `lat` and `lng` are supplied, results are the
+        nearest datasets to that point; otherwise they are newest-first. Always
+        capped by `limit` so clients never fetch the entire library at once.
+      parameters:
+        - in: query
+          name: lat
+          required: false
+          description: User latitude. With `lng`, results are ordered nearest-first.
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+        - in: query
+          name: lng
+          required: false
+          description: User longitude. With `lat`, results are ordered nearest-first.
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+        - in: query
+          name: q
+          required: false
+          description: Case-insensitive search across name, description, and author.
+          schema:
+            type: string
+            maxLength: 200
+        - in: query
+          name: region
+          required: false
+          description: >-
+            Exact region name (US state or country) to filter by. When supplied,
+            the higher `limit` cap applies so a whole region can be fetched at once.
+          schema:
+            type: string
+            maxLength: 120
+        - in: query
+          name: limit
+          required: false
+          description: >-
+            Maximum number of datasets to return. The cap is 200 normally, raised
+            to 5000 when a `region` filter is supplied.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5000
+            default: 50
+      responses:
+        "200":
+          description: List of community datasets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CommunityDatasetSummary"
+    post:
+      operationId: createCommunityDataset
+      tags: [community]
+      summary: Share a dataset with the community
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommunityDatasetInput"
+      responses:
+        "201":
+          description: Dataset created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityDatasetSummary"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /community/datasets/{id}:
+    get:
+      operationId: getCommunityDataset
+      tags: [community]
+      summary: Download a community dataset
+      description: Returns full dataset including geojson. Increments the download counter.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Dataset detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityDatasetDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /community/datasets/bulk:
+    post:
+      operationId: bulkCreateCommunityDatasets
+      tags: [community]
+      summary: Bulk-publish map files to the community library
+      description: |
+        Accepts up to 20 parsed dataset payloads per request. Each item is
+        validated and inserted independently so a single malformed payload
+        does not fail the whole batch. Returns a per-item result array in
+        the same order as the input. Call this endpoint repeatedly in
+        parallel batches for large uploads.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommunityDatasetBatchInput"
+      responses:
+        "200":
+          description: Batch processed — check each result's `success` field.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityDatasetBulkResponse"
+        "400":
+          description: Top-level validation error (e.g. empty or oversized array).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /storage/uploads/request-url:
+    post:
+      tags: [Storage]
+      operationId: requestUploadUrl
+      summary: Request a presigned URL for file upload
+      description: |
+        Returns a presigned GCS URL for direct upload. The client sends JSON
+        metadata here, then uploads the file directly to the returned URL.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+      responses:
+        '200':
+          description: Presigned upload URL generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponse'
+        '400':
+          description: Missing or invalid required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Failed to generate upload URL.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /storage/public-objects/{filePath}:
+    get:
+      tags: [Storage]
+      operationId: getPublicObject
+      summary: Serve a public asset from PUBLIC_OBJECT_SEARCH_PATHS
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Relative file path within the public search paths.
+      responses:
+        '200':
+          description: Object content streamed with correct Content-Type.
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /storage/objects/{objectPath}:
+    get:
+      tags: [Storage]
+      operationId: getStorageObject
+      summary: Serve an object entity from PRIVATE_OBJECT_DIR
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Object path within the private object dir (e.g. `uploads/some-uuid`).
+      responses:
+        '200':
+          description: Object content streamed with correct Content-Type.
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Object not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /community/datasets/{id}/blog:
+    post:
+      tags: [blog]
+      operationId: generateBlogPost
+      summary: Generate and store a blog post for a published track
+      description: |
+        Uses OpenAI to write an informative third-person blog post from the
+        track's title, description, distance, elevation, location, and the
+        supplied photo URLs. Persists and returns the created post.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateBlogPostInput'
+      responses:
+        '201':
+          description: Blog post created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogPost'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Dataset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Generation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /blog:
+    get:
+      tags: [blog]
+      operationId: listBlogPosts
+      summary: List blog posts
+      responses:
+        '200':
+          description: List of blog posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BlogPostSummary'
+  /blog/{slug}:
+    get:
+      tags: [blog]
+      operationId: getBlogPost
+      summary: Get a blog post by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Blog post detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogPost'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /community/feedback:
+    get:
+      tags: [feedback]
+      operationId: listFeedbackPosts
+      summary: List feedback/discussion posts
+      parameters:
+        - in: query
+          name: clientId
+          required: false
+          description: Anonymous client id; when supplied, each post reports whether this client has upvoted it.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of feedback posts (most upvoted first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeedbackPostSummary'
+    post:
+      tags: [feedback]
+      operationId: createFeedbackPost
+      summary: Create a feedback/discussion post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFeedbackPostInput'
+      responses:
+        '201':
+          description: Post created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackPost'
+        '400':
+          description: Invalid input (e.g. empty fields or links not allowed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /community/feedback/{id}:
+    get:
+      tags: [feedback]
+      operationId: getFeedbackPost
+      summary: Get a feedback post with its replies
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Feedback post detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackPost'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /community/feedback/{id}/replies:
+    post:
+      tags: [feedback]
+      operationId: createFeedbackReply
+      summary: Reply to a feedback post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFeedbackReplyInput'
+      responses:
+        '201':
+          description: Reply created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackReply'
+        '400':
+          description: Invalid input (e.g. empty fields or links not allowed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /community/feedback/{id}/upvote:
+    post:
+      tags: [feedback]
+      operationId: upvoteFeedbackPost
+      summary: Toggle an anonymous upvote on a feedback post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpvoteFeedbackInput'
+      responses:
+        '200':
+          description: Updated upvote state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpvoteFeedbackResult'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /community/donate:
+    post:
+      tags: [donate]
+      operationId: createDonationCheckout
+      summary: Create a Stripe Checkout session for a pay-what-you-want donation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDonationInput'
+      responses:
+        '200':
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateDonationResult'
+        '400':
+          description: Invalid amount
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: Donations are not currently configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /projects:
+    get:
+      tags: [projects]
+      operationId: listProjects
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      responses:
+        '200':
+          description: Projects visible to the current user
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FieldProjectSummary' }
+        '401':
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    post:
+      tags: [projects]
+      operationId: createProject
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateFieldProjectInput' }
+      responses:
+        '201':
+          description: Project created
+          content: { application/json: { schema: { $ref: '#/components/schemas/FieldProject' } } }
+        '400':
+          description: Invalid project
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '401':
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+  /projects/{projectId}:
+    get:
+      tags: [projects]
+      operationId: getProject
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Project with its linked routes and reports
+          content: { application/json: { schema: { $ref: '#/components/schemas/FieldProjectDetail' } } }
+        '401':
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '404':
+          description: Project unavailable
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    patch:
+      tags: [projects]
+      operationId: updateProject
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateFieldProjectInput' }
+      responses:
+        '200':
+          description: Updated project
+          content: { application/json: { schema: { $ref: '#/components/schemas/FieldProject' } } }
+        '401':
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '403':
+          description: Owner role required
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+  /projects/{projectId}/reports:
+    get:
+      tags: [projects]
+      operationId: listFieldProjectReports
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Reports visible on the project map
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FieldReport' }
+        '401':
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    post:
+      tags: [projects]
+      operationId: createProjectReport
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateFieldReportInput' }
+      responses:
+        '201':
+          description: Report created
+          content: { application/json: { schema: { $ref: '#/components/schemas/FieldReport' } } }
+        '400':
+          description: Invalid report
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '401':
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+  /projects/{projectId}/reports/{reportId}:
+    get:
+      tags: [projects]
+      operationId: getProjectReport
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: reportId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Report detail including resolution history
+          content: { application/json: { schema: { $ref: '#/components/schemas/FieldReportDetail' } } }
+        '401':
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '404':
+          description: Report unavailable
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    patch:
+      tags: [projects]
+      operationId: updateProjectReport
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: reportId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateFieldReportInput' }
+      responses:
+        '200':
+          description: Updated report
+          content: { application/json: { schema: { $ref: '#/components/schemas/FieldReport' } } }
+        '400':
+          description: Invalid update
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '401':
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+  /projects/{projectId}/report-photos/upload:
+    post:
+      tags: [projects]
+      operationId: requestProjectReportPhotoUpload
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UploadUrlRequest' }
+      responses:
+        '200':
+          description: Private evidence upload URL
+          content: { application/json: { schema: { $ref: '#/components/schemas/UploadUrlResponse' } } }
+        '401':
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+  /public-reports/{token}:
+    post:
+      tags: [projects]
+      operationId: createPublicProjectReport
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePublicFieldReportInput' }
+      responses:
+        '201':
+          description: Anonymous report accepted
+          content: { application/json: { schema: { $ref: '#/components/schemas/PublicReportConfirmation' } } }
+        '400':
+          description: Invalid report
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '404':
+          description: Reporting link unavailable
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '429':
+          description: Too many reports
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+  /public-reports/{token}/photos/upload:
+    post:
+      tags: [projects]
+      operationId: requestPublicProjectReportPhotoUpload
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UploadUrlRequest' }
+      responses:
+        '200':
+          description: Private evidence upload URL
+          content: { application/json: { schema: { $ref: '#/components/schemas/UploadUrlResponse' } } }
+        '404':
+          description: Reporting link unavailable
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '429':
+          description: Too many requests
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+
+  /support/requests:
+    get:
+      tags: [support]
+      operationId: listSupportRequests
+      summary: List private support requests for staff review
+      parameters:
+        - $ref: '#/components/parameters/SupportStaffCookie'
+        - name: category
+          in: query
+          required: false
+          schema: { type: string, enum: [bug, question, sharing_offline, partnership] }
+        - name: severity
+          in: query
+          required: false
+          schema: { type: string, enum: [low, medium, high, critical] }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [new, reviewed, resolved] }
+        - name: from
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: reference
+          in: query
+          required: false
+          schema: { type: string, maxLength: 32 }
+      responses:
+        '200':
+          description: Private support requests matching the requested filters.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SupportRequest' }
+        '400':
+          description: Invalid support request filter
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '401':
+          description: Staff authorization required
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    post:
+      tags: [support]
+      operationId: createSupportRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSupportRequestInput' }
+      responses:
+        '201':
+          description: Private support request created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreateSupportRequestResult' }
+        '400':
+          description: Invalid support request
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /support/requests/{reference}:
+    patch:
+      tags: [support]
+      operationId: updateSupportRequest
+      summary: Mark a private support request reviewed or resolved
+      parameters:
+        - $ref: '#/components/parameters/SupportStaffCookie'
+        - name: reference
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 32 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SupportRequestStatusUpdate' }
+      responses:
+        '200':
+          description: Private support request updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SupportRequest' }
+        '400':
+          description: Invalid support request update
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '401':
+          description: Staff authorization required
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '404':
+          description: Support request not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '409':
+          description: A resolved request cannot be changed back to reviewed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+components:
+  parameters:
+    AuthorizationSessionHeader:
+      name: Authorization
+      in: header
+      required: false
+      description: Opaque session token — `Bearer <sid>`.
+      schema:
+        type: string
+    LiveOwnerCapabilityHeader:
+      name: X-Live-Owner-Capability
+      in: header
+      required: false
+      description: High-entropy device capability for controlling an anonymous live activity.
+      schema:
+        type: string
+    SessionCookie:
+      name: sid
+      in: cookie
+      required: false
+      description: Browser session cookie.
+      schema:
+        type: string
+    SupportStaffCookie:
+      name: mapper_support_review
+      in: cookie
+      required: false
+      description: Staff review session cookie issued by the private support sign-in page.
+      schema:
+        type: string
+  schemas:
+    AuthUser:
+      type: object
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id: { type: string }
+        email: { type: [string, 'null'], format: email }
+        firstName: { type: [string, 'null'] }
+        lastName: { type: [string, 'null'] }
+        profileImageUrl: { type: [string, 'null'] }
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: '#/components/schemas/AuthUser'
+            - type: 'null'
+    AccountDeletionSuccess:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, const: true }
+    DataDeletionInput:
+      type: object
+      required: [scope]
+      properties:
+        scope:
+          type: string
+          enum: [route_data, private_projects, all_cloud_data]
+    DataDeletionResponse:
+      type: object
+      required: [success, scope]
+      properties:
+        success: { type: boolean, const: true }
+        scope:
+          type: string
+          enum: [route_data, private_projects, all_cloud_data]
+    MobileTokenExchangeRequest:
+      type: object
+      required: [code, code_verifier, redirect_uri, state]
+      properties:
+        code: { type: string, minLength: 1 }
+        code_verifier: { type: string, minLength: 1 }
+        redirect_uri: { type: string, minLength: 1, format: uri }
+        state: { type: string, minLength: 1 }
+        nonce: { type: string, minLength: 1 }
+    MobileTokenExchangeSuccess:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string }
+    LogoutSuccess:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, const: true }
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+    Waypoint:
+      type: object
+      required: [id, name, latitude, longitude, notes, trackId, photoUrl, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        notes: { type: [string, 'null'] }
+        trackId: { type: [string, 'null'] }
+        photoUrl:
+          type: [string, 'null']
+          pattern: '^/objects/private-project-photos/'
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    WaypointInput:
+      type: object
+      required: [name, latitude, longitude]
+      properties:
+        name: { type: string, minLength: 1 }
+        latitude: { type: number }
+        longitude: { type: number }
+        notes: { type: [string, 'null'] }
+        trackId: { type: [string, 'null'] }
+        photoUrl:
+          type: [string, 'null']
+          pattern: '^/objects/private-project-photos/'
+        createdAt: { type: string, format: date-time }
+    UserDatasetSummary:
+      type: object
+      required: [id, name, format, color, visible, featureCount, sizeBytes, importedAt, updatedAt, communityId, bounds]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        format: { type: string, enum: [geojson, kml, kmz, gpx] }
+        color: { type: string }
+        visible: { type: boolean }
+        featureCount: { type: integer }
+        sizeBytes: { type: integer }
+        bounds:
+          oneOf:
+            - type: array
+              items: { type: number }
+              minItems: 4
+              maxItems: 4
+            - type: 'null'
+        communityId: { type: [string, 'null'] }
+        importedAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    UserDataset:
+      allOf:
+        - $ref: '#/components/schemas/UserDatasetSummary'
+        - type: object
+          required: [geojson]
+          properties:
+            geojson:
+              type: object
+              additionalProperties: true
+    UserDatasetInput:
+      type: object
+      required: [name, format, geojson]
+      properties:
+        name: { type: string, minLength: 1 }
+        format: { type: string, enum: [geojson, kml, kmz, gpx] }
+        color: { type: string }
+        visible: { type: boolean }
+        bounds:
+          oneOf:
+            - type: array
+              items: { type: number }
+              minItems: 4
+              maxItems: 4
+            - type: 'null'
+        communityId: { type: [string, 'null'] }
+        importedAt: { type: string, format: date-time }
+        geojson:
+          type: object
+          additionalProperties: true
+    UserOfflineRegion:
+      type: object
+      required: [id, name, bounds, minZoom, maxZoom, tileCount, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        bounds:
+          type: array
+          items: { type: number }
+          minItems: 4
+          maxItems: 4
+        minZoom: { type: integer }
+        maxZoom: { type: integer }
+        tileCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+    UserOfflineRegionInput:
+      type: object
+      required: [name, bounds, minZoom, maxZoom, tileCount]
+      properties:
+        name: { type: string, minLength: 1 }
+        bounds:
+          type: array
+          items: { type: number }
+          minItems: 4
+          maxItems: 4
+        minZoom: { type: integer }
+        maxZoom: { type: integer }
+        tileCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+    TrackPoint:
+      type: object
+      required: [lat, lng, t]
+      properties:
+        lat: { type: number }
+        lng: { type: number }
+        t: { type: integer, description: "Timestamp in ms since epoch" }
+        alt: { type: [number, 'null'] }
+        acc: { type: [number, 'null'], description: "Horizontal accuracy in meters" }
+    TrackSummary:
+      type: object
+      required: [id, name, color, distanceMeters, durationMs, pointCount, startedAt, endedAt, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        color: { type: string }
+        distanceMeters: { type: number }
+        durationMs: { type: integer }
+        pointCount: { type: integer }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        kind: { type: string, enum: [recorded, plotted] }
+        shareToken: { type: string, nullable: true }
+        shareVisibility:
+          type: string
+          enum: [private, public]
+          nullable: true
+    Track:
+      allOf:
+        - $ref: '#/components/schemas/TrackSummary'
+        - type: object
+          required: [points]
+          properties:
+            points:
+              type: array
+              items: { $ref: '#/components/schemas/TrackPoint' }
+    TrackInput:
+      type: object
+      required: [name, points]
+      properties:
+        name: { type: string, minLength: 1 }
+        description: { type: string, nullable: true }
+        color: { type: string }
+        kind: { type: string, enum: [recorded, plotted] }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: string, format: date-time }
+        points:
+          type: array
+          items: { $ref: '#/components/schemas/TrackPoint' }
+    ShareTrackInput:
+      type: object
+      required: [visibility]
+      properties:
+        visibility: { type: string, enum: [private, public] }
+    ShareTrackResponse:
+      type: object
+      required: [token, visibility, url]
+      properties:
+        token: { type: string }
+        visibility: { type: string, enum: [private, public] }
+        url: { type: string, description: "Public web URL for the shared route" }
+    CreateLiveActivityInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        ownerDisplayName:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Recorder-provided display name. Omit only for older clients; the shared page falls back to Recorder.
+        followedRoute:
+          allOf:
+            - $ref: '#/components/schemas/LiveActivityFollowedRoute'
+          nullable: true
+          description: Bounded snapshot of the one route actively being followed when sharing starts.
+    LiveActivityPointInput:
+      type: object
+      required: [id, lat, lng, t]
+      properties:
+        id: { type: string, minLength: 8, maxLength: 96 }
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+        t: { type: integer, description: Timestamp in ms since epoch }
+        alt: { type: [number, 'null'] }
+        acc: { type: [number, 'null'], minimum: 0 }
+    LiveActivityPointBatchInput:
+      type: object
+      required: [points]
+      properties:
+        points:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items: { $ref: '#/components/schemas/LiveActivityPointInput' }
+    LiveActivityWaypointInput:
+      type: object
+      required: [id, name, lat, lng, t]
+      properties:
+        id: { type: string, minLength: 8, maxLength: 96 }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+        notes: { type: [string, 'null'], maxLength: 4000 }
+        photoPath:
+          type: [string, 'null']
+          pattern: '^/objects/live-activity-photos/'
+        t: { type: integer, description: Timestamp in ms since epoch }
+    LiveActivityPhotoUploadInput:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 255 }
+        size: { type: integer, minimum: 1, maximum: 20971520 }
+        contentType: { type: string, minLength: 1, maxLength: 128 }
+    LiveActivityPhotoUpload:
+      type: object
+      required: [uploadURL, photoPath]
+      properties:
+        uploadURL: { type: string, format: uri }
+        photoPath:
+          type: string
+          pattern: '^/objects/live-activity-photos/'
+    LiveActivityMessageInput:
+      type: object
+      required: [message, displayName]
+      properties:
+        message: { type: string, minLength: 1, maxLength: 280 }
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Viewer-provided label for this message; not identity verification.
+    LiveActivityOwnerMessageInput:
+      type: object
+      required: [message, clientMessageId]
+      properties:
+        message: { type: string, minLength: 1, maxLength: 280 }
+        clientMessageId:
+          type: string
+          minLength: 8
+          maxLength: 96
+          description: Stable device-generated id that keeps recorder-reply retries idempotent.
+    LiveActivityMessage:
+      type: object
+      required: [id, sender, body, createdAt]
+      properties:
+        id: { type: string }
+        sender: { type: string, enum: [viewer, owner] }
+        displayName:
+          type: [string, 'null']
+          description: Self-provided viewer label. Null for legacy viewer messages and owner messages.
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+    LiveActivityMessageReceipt:
+      type: object
+      required: [accepted, createdAt]
+      properties:
+        accepted: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    LiveActivityPublic:
+      type: object
+      required: [name, ownerDisplayName, followedRoute, status, startedAt, endedAt, lastUpdatedAt, distanceMeters, durationMs, pointCount, points, lastLocation, waypoints, messages]
+      properties:
+        name: { type: string }
+        ownerDisplayName:
+          type: string
+          description: Recorder display name, with Recorder as the safe legacy fallback.
+        followedRoute:
+          allOf:
+            - $ref: '#/components/schemas/LiveActivityFollowedRoute'
+          nullable: true
+        status: { type: string, enum: [active, completed] }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: [string, 'null'], format: date-time }
+        lastUpdatedAt: { type: [string, 'null'], format: date-time }
+        distanceMeters: { type: number }
+        durationMs: { type: integer }
+        pointCount: { type: integer }
+        points:
+          type: array
+          items: { $ref: '#/components/schemas/TrackPoint' }
+        lastLocation:
+          type: [object, 'null']
+          properties:
+            lat: { type: number }
+            lng: { type: number }
+            t: { type: integer }
+        waypoints:
+          type: array
+          description: Waypoints intentionally added while the private activity was active.
+          items: { $ref: '#/components/schemas/LiveActivityWaypoint' }
+        messages:
+          type: array
+          description: Full private conversation for the holder of this live-link token.
+          items: { $ref: '#/components/schemas/LiveActivityMessage' }
+    LiveActivityWaypoint:
+      type: object
+      required: [id, name, lat, lng, notes, photoUrl, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        lat: { type: number }
+        lng: { type: number }
+        notes: { type: [string, 'null'] }
+        photoUrl:
+          type: [string, 'null']
+          description: Token-protected waypoint photo URL.
+        createdAt: { type: string, format: date-time }
+    LiveActivityFollowedRoute:
+      type: object
+      required: [name, points]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        points:
+          type: array
+          minItems: 2
+          maxItems: 500
+          items:
+            type: object
+            required: [lat, lng]
+            properties:
+              lat: { type: number, minimum: -90, maximum: 90 }
+              lng: { type: number, minimum: -180, maximum: 180 }
+    LiveActivityOwner:
+      allOf:
+        - $ref: '#/components/schemas/LiveActivityPublic'
+        - type: object
+          required: [id, token, url, queuedPointCount]
+          properties:
+            id: { type: string }
+            token: { type: string }
+            url: { type: string, format: uri }
+            queuedPointCount:
+              type: integer
+            ownerCapability:
+              type: string
+              description: Returned only when a live activity is first created; never returned by owner refreshes.
+    PrivateProjectCheckoutInput:
+      type: object
+      description: Reserved for future private-project options.
+    PrivateProjectCheckout:
+      type: object
+      required: [projectId, checkoutUrl]
+      properties:
+        projectId: { type: string }
+        checkoutUrl: { type: string, format: uri }
+    PrivateProjectConfirmationInput:
+      type: object
+      required: [sessionId]
+      properties:
+        sessionId: { type: string }
+    PrivateProject:
+      type: object
+      required: [id, trackId, status, isBetaTest, createdAt]
+      properties:
+        id: { type: string }
+        trackId: { type: string }
+        status: { type: string, enum: [pending, active, revoked, expired] }
+        isBetaTest: { type: boolean }
+        url: { type: [string, 'null'], format: uri }
+        expiresAt: { type: [string, 'null'], format: date-time }
+        createdAt: { type: string, format: date-time }
+    BetaPrivateSharingAccess:
+      type: object
+      required: [enabled]
+      properties:
+        enabled: { type: boolean }
+    TeamsEarlyAccessInput:
+      type: object
+      required: [email, consented]
+      properties:
+        email: { type: string, format: email }
+        consented: { type: boolean, const: true }
+    TeamsEarlyAccessResponse:
+      type: object
+      required: [accepted]
+      properties:
+        accepted: { type: boolean, const: true }
+    PrivateProjectWaypoint:
+      type: object
+      required: [id, name, latitude, longitude, notes, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        notes: { type: [string, 'null'] }
+        photoUrl:
+          type: [string, 'null']
+          format: uri
+          description: Token-gated endpoint for the waypoint photo.
+        createdAt: { type: string, format: date-time }
+    PrivateProjectContent:
+      type: object
+      required: [route, waypoints]
+      properties:
+        route: { $ref: '#/components/schemas/SharedTrack' }
+        waypoints:
+          type: array
+          items: { $ref: '#/components/schemas/PrivateProjectWaypoint' }
+    SharedTrack:
+      type: object
+      required: [name, color, kind, distanceMeters, durationMs, pointCount, startedAt, endedAt, visibility, points]
+      properties:
+        name: { type: string }
+        description: { type: string, nullable: true }
+        color: { type: string }
+        kind: { type: string, enum: [recorded, plotted] }
+        distanceMeters: { type: number }
+        durationMs: { type: integer }
+        pointCount: { type: integer }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: string, format: date-time }
+        visibility: { type: string, enum: [private, public] }
+        points:
+          type: array
+          items: { $ref: '#/components/schemas/TrackPoint' }
+    ElevationInput:
+      type: object
+      required: [points]
+      properties:
+        points:
+          type: array
+          items:
+            type: object
+            required: [lat, lng]
+            properties:
+              lat: { type: number }
+              lng: { type: number }
+    ElevationResponse:
+      type: object
+      required: [elevations]
+      properties:
+        elevations:
+          type: array
+          items: { type: [number, 'null'] }
+    AppConfig:
+      type: object
+      properties:
+        expoUrl:
+          type: ["string", "null"]
+          description: Expo Go dev URL (exp://...). Null when no Expo dev server is running.
+      required:
+        - expoUrl
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    CommunityDatasetInput:
+      type: object
+      required: [name, format, geojson]
+      properties:
+        name: { type: string, minLength: 1 }
+        description: { type: ["string", "null"] }
+        format:
+          type: string
+          enum: [geojson, kml, kmz, gpx]
+        author: { type: ["string", "null"] }
+        geojson:
+          type: object
+          additionalProperties: true
+    CommunityDatasetBatchInput:
+      type: object
+      required: [datasets]
+      properties:
+        datasets:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/CommunityDatasetInput"
+    CommunityDatasetBulkResult:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+        dataset:
+          $ref: "#/components/schemas/CommunityDatasetSummary"
+        error:
+          type: ["string", "null"]
+    CommunityDatasetBulkResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommunityDatasetBulkResult"
+    CommunityRegionSummary:
+      type: object
+      properties:
+        region:
+          type: string
+          description: Region name (US state or country).
+        kind:
+          type: string
+          enum: [state, country]
+          description: Whether this region is a US state or a country.
+        datasetCount:
+          type: integer
+          description: Number of published datasets in this region.
+        totalSizeBytes:
+          type: integer
+          description: Combined serialized size of all datasets in this region.
+        totalDistanceMeters:
+          type: ["number", "null"]
+          description: Combined route distance across the region's datasets; null when none carry route geometry.
+      required:
+        - region
+        - kind
+        - datasetCount
+        - totalSizeBytes
+        - totalDistanceMeters
+    SupportalStatus:
+      type: object
+      properties:
+        availableCount:
+          type: integer
+          description: Total trails currently offered by the upstream Supportal API.
+        importedCount:
+          type: integer
+          description: Supportal trails already present in the community library.
+        newCount:
+          type: integer
+          description: Trails available upstream that are not yet imported.
+      required:
+        - availableCount
+        - importedCount
+        - newCount
+    SupportalSyncResult:
+      type: object
+      properties:
+        imported:
+          type: integer
+          description: Trails successfully imported in this batch.
+        failed:
+          type: integer
+          description: Trails that failed to download or parse in this batch.
+        remaining:
+          type: integer
+          description: New trails still not imported after this batch.
+      required:
+        - imported
+        - failed
+        - remaining
+    OverpassSyncBody:
+      type: object
+      required: [state]
+      properties:
+        state:
+          type: string
+          description: US state name to import roads for (e.g. "Colorado").
+    OverpassImportedState:
+      type: object
+      required: [state, featureCount, datasetId, importedAt]
+      properties:
+        state:
+          type: string
+          description: US state name.
+        featureCount:
+          type: integer
+          description: Number of road features in the imported dataset.
+        datasetId:
+          type: string
+          format: uuid
+          description: Community dataset id for this state's road data.
+        importedAt:
+          type: string
+          format: date-time
+          description: When the roads for this state were last imported.
+    OverpassStatus:
+      type: object
+      required: [importedStates]
+      properties:
+        importedStates:
+          type: array
+          items:
+            $ref: "#/components/schemas/OverpassImportedState"
+    OverpassSyncResult:
+      type: object
+      required: [state, featureCount, imported, skipped]
+      properties:
+        state:
+          type: string
+          description: State that was targeted.
+        featureCount:
+          type: integer
+          description: Number of road features in the resulting dataset.
+        imported:
+          type: boolean
+          description: Whether new data was imported in this call.
+        skipped:
+          type: boolean
+          description: True when the state had no matching road features.
+    CommunityDatasetSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        format:
+          type: string
+        author:
+          type: ["string", "null"]
+        featureCount:
+          type: integer
+        boundsWest:
+          type: ["number", "null"]
+        boundsSouth:
+          type: ["number", "null"]
+        boundsEast:
+          type: ["number", "null"]
+        boundsNorth:
+          type: ["number", "null"]
+        sizeBytes:
+          type: integer
+        region:
+          type: ["string", "null"]
+          description: Named region (US state or country) the dataset falls in, derived from its bounding-box centroid; null when no boundary matched.
+        kind:
+          type: ["string", "null"]
+          description: Dataset category — trail (Supportal/Adventure Collective) or road (Overpass overlanding roads). Null for legacy datasets.
+        downloadCount:
+          type: integer
+        distanceMeters:
+          type: ["number", "null"]
+          description: Total length of the dataset's line geometries in meters; null when the dataset has no route.
+        elevationGainMeters:
+          type: ["number", "null"]
+          description: Cumulative positive elevation gain along the route in meters; null when the route carries no altitude data.
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - description
+        - format
+        - author
+        - featureCount
+        - boundsWest
+        - boundsSouth
+        - boundsEast
+        - boundsNorth
+        - sizeBytes
+        - region
+        - kind
+        - downloadCount
+        - distanceMeters
+        - elevationGainMeters
+        - createdAt
+    CommunityDatasetDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        format:
+          type: string
+        author:
+          type: ["string", "null"]
+        featureCount:
+          type: integer
+        boundsWest:
+          type: ["number", "null"]
+        boundsSouth:
+          type: ["number", "null"]
+        boundsEast:
+          type: ["number", "null"]
+        boundsNorth:
+          type: ["number", "null"]
+        sizeBytes:
+          type: integer
+        region:
+          type: ["string", "null"]
+          description: Named region (US state or country) the dataset falls in, derived from its bounding-box centroid; null when no boundary matched.
+        kind:
+          type: ["string", "null"]
+          description: Dataset category — trail (Supportal/Adventure Collective) or road (Overpass overlanding roads). Null for legacy datasets.
+        downloadCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        geojson:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - name
+        - description
+        - format
+        - author
+        - featureCount
+        - boundsWest
+        - boundsSouth
+        - boundsEast
+        - boundsNorth
+        - sizeBytes
+        - region
+        - kind
+        - downloadCount
+        - createdAt
+        - geojson
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Original file name.
+        size:
+          type: integer
+          minimum: 1
+          description: File size in bytes.
+        contentType:
+          type: string
+          minLength: 1
+          description: MIME type of the file (e.g. `image/jpeg`).
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+          description: Presigned GCS URL for PUT upload.
+        objectPath:
+          type: string
+          description: Normalized object path (e.g. `/objects/uploads/uuid`). Store this in your database.
+        metadata:
+          $ref: '#/components/schemas/UploadUrlRequest'
+    GenerateBlogPostInput:
+      type: object
+      required: [imageUrls]
+      properties:
+        units:
+          type: string
+          enum: [metric, imperial]
+          description: >
+            The recorder's unit preference from the app. Controls whether
+            distances and elevations in the generated post are expressed in
+            kilometers/meters (metric) or miles/feet (imperial). Defaults to
+            metric when omitted.
+        distanceMeters:
+          type: ["number", "null"]
+          description: Total track distance in meters.
+        elevationGainMeters:
+          type: ["number", "null"]
+          description: Total elevation gain in meters.
+        centerLat:
+          type: ["number", "null"]
+          description: Representative latitude for reverse geocoding.
+        centerLng:
+          type: ["number", "null"]
+          description: Representative longitude for reverse geocoding.
+        author:
+          type: ["string", "null"]
+        imageUrls:
+          type: array
+          description: Public serving URLs of uploaded track photos.
+          items:
+            type: string
+        imageCaptions:
+          type: array
+          description: >
+            Field notes captioning each photo, index-aligned with imageUrls
+            (null entry when a photo has no note). Passed to the AI for context
+            and shown as the published caption beneath each photo.
+          items:
+            type: ["string", "null"]
+        fieldNotes:
+          type: array
+          description: >
+            Field notes from waypoints along the track that have no photo
+            (e.g. "start of the steep section"). Passed to the AI for richer
+            context only; not stored or displayed as captions.
+          items:
+            type: string
+    BlogPostSummary:
+      type: object
+      required:
+        - id
+        - slug
+        - title
+        - excerpt
+        - coverImageUrl
+        - locationName
+        - distanceMeters
+        - elevationGainMeters
+        - author
+        - datasetId
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        coverImageUrl:
+          type: ["string", "null"]
+        locationName:
+          type: ["string", "null"]
+        distanceMeters:
+          type: ["number", "null"]
+        elevationGainMeters:
+          type: ["number", "null"]
+        author:
+          type: ["string", "null"]
+        datasetId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+    BlogPost:
+      type: object
+      required:
+        - id
+        - slug
+        - title
+        - excerpt
+        - content
+        - coverImageUrl
+        - imageUrls
+        - imageCaptions
+        - locationName
+        - distanceMeters
+        - elevationGainMeters
+        - author
+        - datasetId
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        content:
+          type: string
+          description: Blog body in Markdown.
+        coverImageUrl:
+          type: ["string", "null"]
+        imageUrls:
+          type: array
+          items:
+            type: string
+        imageCaptions:
+          type: array
+          items:
+            type: ["string", "null"]
+        locationName:
+          type: ["string", "null"]
+        distanceMeters:
+          type: ["number", "null"]
+        elevationGainMeters:
+          type: ["number", "null"]
+        author:
+          type: ["string", "null"]
+        datasetId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+    FeedbackReply:
+      type: object
+      required: [id, postId, authorName, body, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        postId:
+          type: string
+          format: uuid
+        authorName:
+          type: string
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    FeedbackPostSummary:
+      type: object
+      required:
+        - id
+        - authorName
+        - title
+        - body
+        - upvotes
+        - replyCount
+        - voted
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        authorName:
+          type: string
+        title:
+          type: string
+        body:
+          type: ["string", "null"]
+        upvotes:
+          type: integer
+        replyCount:
+          type: integer
+        voted:
+          type: boolean
+          description: Whether the requesting client (by clientId) has upvoted this post.
+        createdAt:
+          type: string
+          format: date-time
+    FeedbackPost:
+      type: object
+      required:
+        - id
+        - authorName
+        - title
+        - body
+        - upvotes
+        - replyCount
+        - voted
+        - createdAt
+        - replies
+      properties:
+        id:
+          type: string
+          format: uuid
+        authorName:
+          type: string
+        title:
+          type: string
+        body:
+          type: ["string", "null"]
+        upvotes:
+          type: integer
+        replyCount:
+          type: integer
+        voted:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        replies:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeedbackReply'
+    CreateFeedbackPostInput:
+      type: object
+      required: [authorName, title]
+      properties:
+        authorName:
+          type: string
+          minLength: 1
+          maxLength: 40
+        title:
+          type: string
+          minLength: 3
+          maxLength: 140
+        body:
+          type: ["string", "null"]
+          maxLength: 4000
+    CreateFeedbackReplyInput:
+      type: object
+      required: [authorName, body]
+      properties:
+        authorName:
+          type: string
+          minLength: 1
+          maxLength: 40
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    UpvoteFeedbackInput:
+      type: object
+      required: [clientId]
+      properties:
+        clientId:
+          type: string
+          minLength: 1
+          maxLength: 100
+    UpvoteFeedbackResult:
+      type: object
+      required: [upvotes, voted]
+      properties:
+        upvotes:
+          type: integer
+        voted:
+          type: boolean
+    FieldProjectSummary:
+      type: object
+      required: [id, name, status, reportCount, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: ["string", "null"] }
+        status: { type: string, enum: [active, archived] }
+        reportCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    FieldProject:
+      allOf:
+        - $ref: '#/components/schemas/FieldProjectSummary'
+        - type: object
+          required: [ownerId, publicReportUrl]
+          properties:
+            ownerId: { type: string }
+            publicReportUrl: { type: string, format: uri }
+    FieldProjectRoute:
+      type: object
+      required: [id, trackId, name]
+      properties:
+        id: { type: string }
+        trackId: { type: string }
+        name: { type: string }
+    FieldProjectDetail:
+      allOf:
+        - $ref: '#/components/schemas/FieldProject'
+        - type: object
+          required: [role, routes, reports]
+          properties:
+            role: { type: string, enum: [owner, member] }
+            routes:
+              type: array
+              items: { $ref: '#/components/schemas/FieldProjectRoute' }
+            reports:
+              type: array
+              items: { $ref: '#/components/schemas/FieldReport' }
+    CreateFieldProjectInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: ["string", "null"], maxLength: 4000 }
+        trackIds:
+          type: array
+          maxItems: 100
+          items: { type: string }
+    UpdateFieldProjectInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: ["string", "null"], maxLength: 4000 }
+        status: { type: string, enum: [active, archived] }
+    FieldReport:
+      type: object
+      required: [id, projectId, description, priority, status, latitude, longitude, photoCount, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        title: { type: ["string", "null"] }
+        description: { type: string }
+        category: { type: ["string", "null"] }
+        priority: { type: string, enum: [low, medium, high, urgent] }
+        status: { type: string, enum: [open, in_progress, resolved] }
+        latitude: { type: number }
+        longitude: { type: number }
+        photoCount: { type: integer }
+        resolutionNote: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    FieldReportHistory:
+      type: object
+      required: [id, action, createdAt]
+      properties:
+        id: { type: string }
+        action: { type: string }
+        note: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    FieldReportDetail:
+      allOf:
+        - $ref: '#/components/schemas/FieldReport'
+        - type: object
+          required: [photoUrls, resolutionPhotoUrls, history]
+          properties:
+            photoUrls:
+              type: array
+              items: { type: string, format: uri }
+            resolutionPhotoUrls:
+              type: array
+              items: { type: string, format: uri }
+            history:
+              type: array
+              items: { $ref: '#/components/schemas/FieldReportHistory' }
+    CreateFieldReportInput:
+      type: object
+      required: [description, latitude, longitude]
+      properties:
+        title: { type: ["string", "null"], maxLength: 160 }
+        description: { type: string, minLength: 1, maxLength: 5000 }
+        category: { type: ["string", "null"], maxLength: 48 }
+        priority: { type: string, enum: [low, medium, high, urgent] }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        photoPaths:
+          type: array
+          maxItems: 8
+          items: { type: string }
+    UpdateFieldReportInput:
+      type: object
+      properties:
+        title: { type: ["string", "null"], maxLength: 160 }
+        description: { type: string, minLength: 1, maxLength: 5000 }
+        category: { type: ["string", "null"], maxLength: 48 }
+        priority: { type: string, enum: [low, medium, high, urgent] }
+        status: { type: string, enum: [open, in_progress, resolved] }
+        resolutionNote: { type: ["string", "null"], maxLength: 5000 }
+        resolutionPhotoPaths:
+          type: array
+          maxItems: 8
+          items: { type: string }
+    CreatePublicFieldReportInput:
+      allOf:
+        - $ref: '#/components/schemas/CreateFieldReportInput'
+        - type: object
+          properties:
+            antiSpam:
+              type: string
+              maxLength: 0
+    PublicReportConfirmation:
+      type: object
+      required: [reportId, message]
+      properties:
+        reportId: { type: string }
+        message: { type: string }
+    CreateSupportRequestInput:
+      type: object
+      required: [category, severity, summary, description]
+      properties:
+        category:
+          type: string
+          enum: [bug, question, sharing_offline, partnership]
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        summary:
+          type: string
+          minLength: 3
+          maxLength: 180
+        description:
+          type: string
+          minLength: 10
+          maxLength: 8000
+        reproductionSteps:
+          type: ["string", "null"]
+          maxLength: 6000
+        expectedBehavior:
+          type: ["string", "null"]
+          maxLength: 3000
+        actualBehavior:
+          type: ["string", "null"]
+          maxLength: 3000
+        context:
+          type: ["string", "null"]
+          maxLength: 1000
+        environment:
+          type: ["string", "null"]
+          maxLength: 500
+        contactEmail:
+          type: ["string", "null"]
+          format: email
+          maxLength: 254
+        mediaUrl:
+          type: ["string", "null"]
+          format: uri
+          maxLength: 2000
+        website:
+          type: string
+          maxLength: 0
+    CreateSupportRequestResult:
+      type: object
+      required: [reference, message]
+      properties:
+        reference:
+          type: string
+        message:
+          type: string
+    SupportRequest:
+      type: object
+      required: [reference, category, severity, summary, description, reproductionSteps, expectedBehavior, actualBehavior, context, environment, contactEmail, mediaUrl, status, createdAt]
+      properties:
+        reference: { type: string }
+        category: { type: string, enum: [bug, question, sharing_offline, partnership] }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        summary: { type: string }
+        description: { type: string }
+        reproductionSteps: { type: ["string", "null"] }
+        expectedBehavior: { type: ["string", "null"] }
+        actualBehavior: { type: ["string", "null"] }
+        context: { type: ["string", "null"] }
+        environment: { type: ["string", "null"] }
+        contactEmail: { type: ["string", "null"], format: email }
+        mediaUrl: { type: ["string", "null"], format: uri }
+        status: { type: string, enum: [new, reviewed, resolved] }
+        createdAt: { type: string, format: date-time }
+    SupportRequestStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [reviewed, resolved] }
+    CreateDonationInput:
+      type: object
+      required: [amountCents]
+      properties:
+        amountCents:
+          type: integer
+          description: Donation amount in US cents. Min $1, max $100,000.
+          minimum: 100
+          maximum: 10000000
+    CreateDonationResult:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Stripe Checkout URL to redirect the donor to.

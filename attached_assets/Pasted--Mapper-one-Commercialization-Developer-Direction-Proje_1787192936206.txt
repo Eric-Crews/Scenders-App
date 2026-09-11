@@ -1,0 +1,1031 @@
+# Mapper.one Commercialization — Developer Direction
+
+## Project Goal
+
+Evolve the existing mapper.one application into a commercial field-mapping and issue-management platform **without removing or degrading the existing recreational mapping experience**.
+
+The existing ability to:
+
+* Record GPS tracks
+* Create routes
+* Add waypoints
+* Attach photos
+* Add notes
+* View maps
+* Share geographic information
+* Use mapper.one recreationally
+
+should remain core functionality.
+
+Do **not** rebuild mapper.one as generic business-management software.
+
+Instead, extend the existing geographic model so the same mapping technology can support organizations that manage real places.
+
+The commercial product should revolve around:
+
+> **Map a place. Report what needs attention. Show exactly where it is. Track it until it's resolved.**
+
+---
+
+# 1. Preserve the Existing Recreational Product
+
+The current mapper.one experience remains available.
+
+A recreational user should still be able to:
+
+**Record → Explore → Mark → Save → Share**
+
+Examples:
+
+* Hiking
+* Mountain biking
+* Trail running
+* Hunting
+* Fishing
+* Overlanding
+* Personal property mapping
+* Travel
+* Outdoor exploration
+
+Do not require these users to understand Projects, Reports, Teams or commercial functionality.
+
+The commercial functionality should be an additional layer rather than a replacement.
+
+---
+
+# 2. Introduce Projects
+
+Create a new top-level object:
+
+## Project
+
+A Project represents a geographic area, property, trail system, work site or managed location.
+
+Examples:
+
+**Bent Creek Trails**
+
+**Oak Ridge HOA**
+
+**Smith Tree Removal**
+
+**Pisgah Trail Maintenance**
+
+**Downtown Asheville**
+
+**Mountain Resort Property**
+
+A Project can contain:
+
+```text
+PROJECT
+
+name
+description
+owner
+organization
+geographic boundary [optional]
+routes[]
+waypoints[]
+reports[]
+members[]
+public_reporting_enabled
+created_at
+updated_at
+```
+
+Existing routes should eventually be assignable to Projects without changing the underlying route data.
+
+---
+
+# 3. Preserve Routes Inside Projects
+
+Routes remain an important mapper.one differentiator.
+
+A Project may contain multiple routes.
+
+Example:
+
+## Bent Creek Trails
+
+**Routes**
+
+Explorer Loop
+Hard Times Connector
+Wolf Branch
+Maintenance Access Road
+
+**Reports**
+
+Fallen Tree — Open
+Drainage — Open
+Trail Damage — In Progress
+Missing Sign — Resolved
+
+Routes and Reports should work together.
+
+A report can optionally reference:
+
+```text
+project_id
+route_id
+```
+
+This allows mapper.one to understand:
+
+> There is a fallen tree on the Explorer Loop.
+
+rather than merely:
+
+> There is something at these coordinates.
+
+---
+
+# 4. Introduce Reports
+
+Create a new object:
+
+```text
+REPORT
+
+id
+project_id
+route_id [optional]
+
+latitude
+longitude
+
+category
+title
+description
+
+photos[]
+
+status
+priority
+
+submitted_by_user_id [optional]
+submitted_by_name [optional]
+submitted_by_email [optional]
+
+assigned_to [future]
+
+created_at
+updated_at
+resolved_at
+
+resolution_notes
+resolution_photos[]
+```
+
+Reports should be first-class geographic objects.
+
+Every report should appear as a pin on the Project map.
+
+---
+
+# 5. Report Status
+
+Start with three statuses:
+
+### Open
+
+Needs attention.
+
+### In Progress
+
+Someone is addressing it.
+
+### Resolved
+
+Work has been completed.
+
+Keep V1 simple.
+
+Do not build complicated ticket-management workflows yet.
+
+Visually:
+
+🔴 Open
+
+🟡 In Progress
+
+🟢 Resolved
+
+Map pins should reflect status.
+
+---
+
+# 6. Public Reporting
+
+Organizations should be able to enable:
+
+**Allow Public Reports**
+
+This generates a simple URL:
+
+`mapper.one/p/{project-slug}/report`
+
+Example:
+
+`mapper.one/p/bent-creek/report`
+
+This page should work on a mobile browser.
+
+The reporter should **not need mapper.one installed**.
+
+The reporter should **not need an account**.
+
+---
+
+# 7. Public Reporting Flow
+
+The reporting experience should take approximately 30 seconds.
+
+## Report an Issue
+
+**Bent Creek Trails**
+
+### What did you find?
+
+[Trail Damage]
+
+[Fallen Tree]
+
+[Drainage]
+
+[Trash]
+
+[Signage]
+
+[Hazard]
+
+[Other]
+
+↓
+
+### Where is it?
+
+**Use My Current Location**
+
+Show map and allow the reporter to adjust the pin manually.
+
+↓
+
+### Add a Photo
+
+[Take Photo]
+
+[Choose Photo]
+
+↓
+
+### Tell us more
+
+Optional text field.
+
+↓
+
+**Submit Report**
+
+That's it.
+
+Do not ask the public to create an account.
+
+---
+
+# 8. Confirmation
+
+After submission:
+
+## Thanks for the report.
+
+**Fallen Tree**
+
+Your report has been sent to the team managing Bent Creek Trails.
+
+[View Report]
+
+Optionally:
+
+**Get mapper.one**
+
+But app installation should never be required to report an issue.
+
+---
+
+# 9. Project Management View
+
+The organization gets a dashboard.
+
+## Bent Creek Trails
+
+At the top:
+
+**23 Open**
+
+**6 In Progress**
+
+**142 Resolved**
+
+Then:
+
+[Map] [Reports] [Routes]
+
+### Map
+
+Show routes and report pins.
+
+Filters:
+
+**All**
+
+**Open**
+
+**In Progress**
+
+**Resolved**
+
+and optionally category.
+
+---
+
+# 10. Report Detail
+
+Clicking a report opens:
+
+## Fallen Tree
+
+**Open**
+
+[PHOTO]
+
+**Reported**
+
+August 19, 2026
+
+**Location**
+
+Explorer Loop
+
+**Description**
+
+Large tree completely blocking the trail approximately 0.4 miles from the trailhead.
+
+[View on Map]
+
+### Management Actions
+
+[Mark In Progress]
+
+[Mark Resolved]
+
+---
+
+# 11. Resolution Workflow
+
+When a manager or field crew taps:
+
+**Resolve**
+
+allow:
+
+### Resolution Notes
+
+What was done?
+
+### Add After Photo
+
+Optional but strongly encouraged.
+
+Then:
+
+**Mark Resolved**
+
+Store:
+
+```text
+resolved_at
+resolved_by
+resolution_notes
+resolution_photos
+```
+
+This creates a useful historical record.
+
+---
+
+# 12. Before / After
+
+Resolved reports should eventually show:
+
+## Fallen Tree
+
+### Reported
+
+[BEFORE PHOTO]
+
+August 19
+
+Large tree blocking trail.
+
+↓
+
+### Resolved
+
+[AFTER PHOTO]
+
+August 21
+
+Tree removed and trail cleared.
+
+**✓ Resolved**
+
+This is valuable to:
+
+* Trail organizations
+* HOAs
+* Municipalities
+* Property managers
+* Land managers
+* Landscaping companies
+* Parks departments
+
+because mapper.one becomes documentation of work completed.
+
+---
+
+# 13. QR Codes
+
+Every Project with public reporting enabled should automatically receive a QR code.
+
+Example:
+
+## Bent Creek Trails
+
+### Report an issue
+
+**See something that needs attention?**
+
+[QR CODE]
+
+Scan to report trail damage, fallen trees, drainage problems or other issues.
+
+The organization can download:
+
+**PNG**
+
+and eventually:
+
+**Printable Sign PDF**
+
+This creates an extremely simple adoption mechanism.
+
+---
+
+# 14. Organization Accounts
+
+Do not build complicated enterprise organization management initially.
+
+Start with:
+
+```text
+ORGANIZATION
+
+id
+name
+owner_user_id
+logo [optional]
+projects[]
+members[]
+subscription_status
+```
+
+Roles:
+
+### Owner
+
+Full control.
+
+### Manager
+
+Manage Projects and Reports.
+
+### Member
+
+View projects and update Reports.
+
+Public reporters have no organizational account.
+
+---
+
+# 15. Commercial Model
+
+Keep normal mapper.one recreational use free.
+
+The organization pays for **managed Projects**, not basic mapping.
+
+Recommended initial structure:
+
+### mapper.one
+
+**Free**
+
+Personal mapping and recreation.
+
+* Record routes
+* Waypoints
+* Photos
+* Notes
+* Recreational sharing
+
+---
+
+### Private Project
+
+**$19 / 180 days**
+
+For individual commercial jobs.
+
+* Private route
+* Waypoints
+* Photos
+* Notes
+* Private sharing
+* Crew/client access
+
+---
+
+### Mapper.one Organizations
+
+Target initial pricing:
+
+**$49/month**
+
+Includes:
+
+* Organization workspace
+* Managed Projects
+* Public issue reporting
+* GPS reports
+* Photo reports
+* QR reporting
+* Status management
+* Resolution history
+* Shared routes
+* Manager access
+
+Exact limits can be determined after real-world testing.
+
+Do not spend significant development time building elaborate billing tiers yet.
+
+---
+
+# 16. Commercial Architecture
+
+Keep these concepts independent:
+
+```text
+USER
+   │
+   ├── Personal Routes
+   │
+   └── Organization
+           │
+           ├── Project
+           │      │
+           │      ├── Routes
+           │      ├── Waypoints
+           │      └── Reports
+           │
+           └── Members
+```
+
+And separately:
+
+```text
+REPORT
+  ↓
+OPEN
+  ↓
+IN PROGRESS
+  ↓
+RESOLVED
+```
+
+This prevents commercial features from contaminating the existing recreational route model.
+
+---
+
+# 17. Important Relationship: Waypoint vs Report
+
+Do not make Reports simply another name for Waypoints.
+
+A **Waypoint** represents something the mapper wants to remember.
+
+Example:
+
+> Waterfall
+
+> Campsite
+
+> Trail junction
+
+A **Report** represents something requiring attention or action.
+
+Example:
+
+> Fallen tree
+
+> Broken irrigation
+
+> Trash
+
+> Erosion
+
+> Damaged sign
+
+Reports require workflow:
+
+```text
+location
++
+information
++
+status
++
+resolution
+```
+
+Waypoints don't.
+
+However, reuse the existing mapper.one map/pin/photo infrastructure wherever practical.
+
+---
+
+# 18. Organization Categories
+
+Allow organizations to customize Report categories.
+
+Provide templates.
+
+### Trail Management
+
+Fallen Tree
+Erosion
+Drainage
+Trail Damage
+Bridge
+Signage
+Trash
+Hazard
+Other
+
+### Property Management
+
+Landscaping
+Trash
+Drainage
+Lighting
+Road/Parking
+Building
+Utility
+Safety
+Other
+
+### HOA
+
+Landscaping
+Road
+Sidewalk
+Drainage
+Common Area
+Trash
+Lighting
+Safety
+Other
+
+### Arborist
+
+Remove
+Prune
+Hazard
+Storm Damage
+Disease
+Stump
+Other
+
+Don't hard-code mapper.one around one industry.
+
+The same Report architecture should support all of them.
+
+---
+
+# 19. Privacy Controls
+
+Each Project should support:
+
+### Private
+
+Only organization members can see Project information.
+
+### Private + Public Reporting
+
+The public can submit reports but cannot see the internal Project.
+
+### Public
+
+Project map and selected reports can be viewed publicly.
+
+This distinction is important.
+
+An HOA may want:
+
+**Public reporting → Private management**
+
+while a trail organization might want:
+
+**Public reporting → Public trail-condition map.**
+
+---
+
+# 20. Notifications
+
+For V1, notify managers when a new report is submitted.
+
+Example:
+
+**New report — Bent Creek Trails**
+
+Fallen Tree
+
+Explorer Loop
+
+[View Report]
+
+Start with email and/or existing app notifications.
+
+Do not build a complex notification engine.
+
+Eventually allow reporters to optionally provide email and receive:
+
+> **The issue you reported has been resolved.**
+
+But don't make email mandatory.
+
+---
+
+# 21. Existing Route Sharing
+
+Continue implementing the paid Private Project sharing system separately.
+
+That serves a different use case:
+
+### Private Project
+
+> I mapped this job and need to give it to my crew.
+
+### Organization Reporting
+
+> I manage this place and need people to tell me what's happening there.
+
+Both ultimately use the same geographic platform.
+
+This is strategically valuable.
+
+---
+
+# 22. Landing Page Implications
+
+The commercial homepage should eventually communicate three fundamental things mapper.one does.
+
+## Map
+
+**Record the places where you work.**
+
+GPS routes, waypoints, photographs and notes.
+
+## Share
+
+**Give someone else everything they need to find it.**
+
+Share routes and field information with crews and collaborators.
+
+## Manage
+
+**See what needs attention and track it until it's resolved.**
+
+Accept location-based reports from employees, residents, visitors or community members.
+
+This is a substantially stronger product story than positioning mapper.one as simply a route recorder.
+
+---
+
+# 23. Development Priority
+
+Do not attempt to build everything simultaneously.
+
+## Phase 1 — Reports
+
+Build:
+
+* Report database model
+* Report map pins
+* Photo
+* GPS coordinates
+* Description
+* Categories
+* Open/In Progress/Resolved
+* Resolution notes
+* Resolution photo
+
+Use an existing route/project during development.
+
+---
+
+## Phase 2 — Projects
+
+Add:
+
+* Project model
+* Routes within Projects
+* Reports within Projects
+* Project map
+* Project dashboard
+
+---
+
+## Phase 3 — Public Reporting
+
+Build:
+
+* Public reporting URL
+* Mobile web form
+* GPS location
+* Camera/photo upload
+* Category
+* Description
+* Anonymous submission
+
+This is the feature that needs to be exceptionally simple.
+
+---
+
+## Phase 4 — Organizations
+
+Add:
+
+* Organization
+* Members
+* Project ownership
+* Basic permissions
+
+---
+
+## Phase 5 — QR Reporting
+
+Automatically generate downloadable QR codes for Project reporting URLs.
+
+---
+
+## Phase 6 — Monetization
+
+Connect organization access to Stripe and introduce paid organization plans.
+
+Do this after the basic workflow is working well enough to demonstrate to potential customers.
+
+---
+
+# 24. First Real-World Test
+
+Before adding significant additional functionality, deploy one Project in the real world.
+
+Ideally find:
+
+* One trail organization
+* One HOA/property manager
+* One landscaping/tree company
+
+Give each a Project.
+
+Ask them to actually use it.
+
+For the trail organization:
+
+Put the reporting URL or QR code in front of actual trail users.
+
+Measure:
+
+* Reports submitted
+* Reports containing useful GPS locations
+* Photos submitted
+* Reports resolved
+* Time to resolution
+* Whether staff actually use the management map
+
+This will reveal which features matter.
+
+---
+
+# 25. Features We Should Explicitly Avoid Initially
+
+Do **not** build:
+
+* Full CRM
+* Work orders
+* Invoicing
+* Payroll
+* Time tracking
+* Fleet management
+* Complex project management
+* Enterprise GIS
+* Advanced analytics
+* AI classification
+* Complicated permission hierarchies
+* Government procurement features
+
+There are mature products in all of these categories.
+
+Mapper.one's advantage should remain its geographic simplicity.
+
+---
+
+# 26. The Product Principle
+
+Every major feature should answer:
+
+> **Where is it?**
+
+A traditional issue-management system tells someone:
+
+> There's a fallen tree.
+
+Mapper.one should tell them:
+
+> There's a fallen tree **right here**.
+
+Then provide:
+
+**GPS location**
+
+*
+
+**route**
+
+*
+
+**photo**
+
+*
+
+**field notes**
+
+*
+
+**status**
+
+*
+
+**resolution**
+
+That geographic context is the reason this belongs inside mapper.one rather than becoming another generic task-management application.
+
+---
+
+# 27. Long-Term Product Direction
+
+The ultimate product can support a very simple lifecycle:
+
+**EXPLORE**
+
+Record routes recreationally.
+
+↓
+
+**MAP**
+
+Document places professionally.
+
+↓
+
+**SHARE**
+
+Give routes, locations, photos and knowledge to other people.
+
+↓
+
+**REPORT**
+
+Allow people in the field to identify problems.
+
+↓
+
+**RESOLVE**
+
+Give organizations a geographic workflow for getting those problems fixed.
+
+The recreational experience is therefore not separate from the commercial product.
+
+It's the foundation of it.
+
+Mapper.one should remain enjoyable enough for someone mapping a mountain-bike ride on Saturday while becoming useful enough that the organization maintaining that same trail system pays mapper.one to manage what happens there Monday through Friday.

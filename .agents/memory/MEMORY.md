@@ -1,0 +1,29 @@
+- [Expo Go download failure](expo-go-download-failure.md) — "Failed to download remote update": first check SDK version skew, run `expo install --fix`.
+- [Route plotting & following](route-following.md) — track `kind` threads through types/openapi/db/server/sync in lockstep; `?follow=` clears only after tracks hydrate; elevation proxy caps 100 pts.
+- [Datasets follow as synthetic tracks](dataset-follow.md) — datasets are routes; tap→`datasetTap` bridge, follow builds in-memory `dataset:<id>` Track set directly as followTrack (never persisted/synced).
+- [AI blog generation](blog-generation-vision.md) — gpt-4o vision needs publicly-fetchable photo URLs; one bad URL throws invalid_image_url and fails the call, so always text-only fallback.
+- [Feedback board spam hardening](feedback-board-spam.md) — unauthed board: URL guard rejects anything hostname-shaped; trust proxy=1 (not true); upvote toggle recomputes count+voted at tx end.
+- [Stripe donations](stripe-donations.md) — pay-what-you-want custom unit_amount; orval omits .int() so guard ints server-side; return URLs use canonical mapper.one, not REPLIT_DOMAINS.
+- [SEO / SSR landing pages](seo-ssr-pages.md) — site SPA is crawler-invisible; serve SEO pages as raw HTML from api-server, add each path to artifact.toml proxy paths, pin canonical to REPLIT_DOMAINS.
+- [Map tile layers](map-tile-layers.md) — layer registry is fully data-driven (config → UI/renderer/offline-cache); providers differ in tile format so the offline data-URL must sniff PNG vs JPEG.
+- [Mobile place geocoding](mobile-geocoding.md) — use expo-location geocodeAsync (not Nominatim/HTTP) for place search; RN can't set User-Agent reliably; label origin with typed query.
+- [Expo URL in published site](expo-url-in-published-site.md) — REPLIT_EXPO_DEV_DOMAIN is dev-only; site bakes SITE_EXPO_DEV_DOMAIN at prod build; an exp:// dev URL on a live site is a fragile stopgap.
+- [Mobile data backend](mobile-data-backend.md) — EXPO_PUBLIC_DOMAIN picks API/DB (separate from Metro bundle host); dev Expo now points at prod mapper.one, so dev testing mutates live prod data.
+- [Community dataset route stats](community-dataset-route-stats.md) — distance/elevation are DB columns; list endpoint is location-aware nearest-N (lat/lng/q/limit), never reads geojson; sum per line part only.
+- [WebView map blank after photo viewer](webview-map-blank-revert.md) — blank Leaflet map on Android Expo Go: confirm "Android Bundled" in Metro (device may be stale); safe recovery is restoring leafletHtml.ts/MapView.tsx wholesale to last-good commit.
+- [Share route by link](share-route-by-link.md) — token-only unauthed read; /r/:token escapes user data; public must publish-to-community FIRST then mark public (publishedDatasetId dedup).
+- [Overpass import pipeline](overpass-import-pipeline.md) — 406 fix (headers), grid-tile queries (1°×1° to stay under 50MB), GeoJSON stripping, fire-and-forget per-state endpoint.
+- [Supportal trail sync](supportal-sync.md) — server-side GPX import; dedup by `[supportal:<id>]` description marker (no DB column); https-only download; process-global lock can't stop multi-instance dupes.
+- [Download all routes by region](download-by-region.md) — region (US state/country) computed server-side from bounds centroid via @workspace/geo; list cap 200→5000 when region filtered; geo regions.json copied next to dist/ in build.mjs; region drilldown needs regionReqSeq race guard.
+- [Public lead consent](public-lead-consent.md) — Orval’s Zod output does not enforce an OpenAPI boolean `const`; handlers must explicitly require affirmative consent and hide duplicate status.
+- [Trail guide admin eligibility](trail-guide-admin-eligibility.md) — validate submitted sources directly, never via a capped dashboard refresh; guide index stays uncached.
+- [Expo publish versioning](expo-publish-versioning.md) — after an approved train closes, bump the static marketing version; keep bundle ID unchanged and let Launch increment build number.
+- [Android release delivery](android-release-delivery.md) — use Expo remote builds; never retain local Android toolchains or private signing files in the workspace.
+- [Android release page handoff](android-release-page-handoff.md) — Library output registration does not place an AAB in the website’s public download folder.
+- [Publishing image size](publishing-image-size.md) — use `.replitignore` for development caches/dependencies, but bundle every server runtime dependency first.
+- [Large static downloads](large-static-downloads.md) — published static assets above roughly 8 MB need client-side byte-range requests; full GETs can return 500.
+- [Mobile session revalidation](mobile-session-revalidation.md) — privileged mobile actions must recheck the stored session, or a cached account state can conceal expiration until a 401.
+- [Permanent private route links](permanent-private-route-links.md) — route links are free, unlisted, and remain active until the owner revokes them; never payment-gated.
+- [Post-merge schema synchronization](post-merge-schema-synchronization.md) — Drizzle rename prompts can exit 0 with closed stdin; rebuild DB/API declarations before checking merged server code.
+- [Expo SecureStore web fallback](expo-secure-store-web-fallback.md) — native SecureStore works for bearer secrets; current Expo web shim crashes, so web must keep them memory-only.
+- [Live waypoint sharing](live-waypoint-sharing.md) — during an active shared route, adding a photo waypoint intentionally shares its location, details, and photo with viewers.

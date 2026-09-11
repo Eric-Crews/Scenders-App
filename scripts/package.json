@@ -1,0 +1,25 @@
+{
+  "name": "@workspace/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello": "tsx ./src/hello.ts",
+    "sync-supportal": "tsx ./src/sync-supportal.ts",
+    "push-supportal-to-prod": "tsx ./src/push-supportal-to-prod.ts",
+    "backfill-community-regions": "tsx ./src/backfill-community-regions.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:"
+  },
+  "dependencies": {
+    "@mapbox/togeojson": "^0.16.2",
+    "@xmldom/xmldom": "^0.9.10",
+    "@workspace/db": "workspace:*",
+    "@workspace/geo": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "pg": "^8.20.0"
+  }
+}

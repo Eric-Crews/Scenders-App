@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="250" viewBox="0 0 300 250" role="img" aria-labelledby="title desc">
+  <title id="title">mapper.one sidebar ad</title>
+  <desc id="desc">Track more. Carry less. Track trails. Follow routes. Explore farther. Try mapper.one.</desc>
+  <rect width="300" height="250" fill="#f6f3ee"/>
+  <g transform="translate(25 27)" fill="#1d352d">
+    <circle cx="13" cy="13" r="10.5" fill="none" stroke="#466b50" stroke-width="1.8"/>
+    <path d="M16.8 9.2 14.2 15 8.5 17.5l2.6-5.8z" fill="#466b50"/>
+    <circle cx="13" cy="13" r="1.8" fill="#1d352d"/>
+    <text x="31" y="18" font-family="Fraunces, Georgia, serif" font-size="18" font-weight="700" letter-spacing=".25">mapper.one</text>
+  </g>
+  <g fill="#1d352d">
+    <text x="25" y="88" font-family="Fraunces, Georgia, serif" font-size="27" font-weight="700">
+      <tspan x="25" dy="0">Track more.</tspan>
+      <tspan x="25" dy="30">Carry less.</tspan>
+    </text>
+    <text x="25" y="180" font-family="Inter, Arial, sans-serif" font-size="14" fill="#5e625c">
+      <tspan x="25" dy="0">Track trails. Follow routes.</tspan>
+      <tspan x="25" dy="20">Explore farther.</tspan>
+    </text>
+  </g>
+  <g transform="translate(25 208)">
+    <rect width="137" height="30" rx="15" fill="#466b50"/>
+    <text x="68.5" y="22" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" fill="#f6f3ee">Try mapper.one</text>
+  </g>
+</svg>

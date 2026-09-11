@@ -1,0 +1,176 @@
+"Share my adventure." Start tracking, choose a contact, and mapper.one sends them a link. They don't need the app or an account. They open a lightweight web page and watch the activity.
+
+What I would build
+
+When starting a tracked route, add:
+
+Share Live Route
+
+The user chooses a contact and mapper.one opens/sends an SMS such as:
+
+Eric is sharing a live mountain bike ride with you on mapper.one. Follow the route and send messages here: [link]
+
+The web page could show:
+
+┌───────────────────────────────────────────────┐
+│ Eric's Mountain Bike Ride                     │
+│                                               │
+│ LIVE • Last update 2 minutes ago              │
+│                                               │
+│              INTERACTIVE MAP                  │
+│                                               │
+│       ─────────────●                           │
+│       completed route ↑                       │
+│                    current location           │
+│                                               │
+├───────────────────────────────────────────────┤
+│  8.7 mi       1:14:22       1,420 ft gain     │
+├───────────────────────────────────────────────┤
+│ Messages                                      │
+│                                               │
+│ Ann: Everything going okay?                   │
+│ Eric: 👍                                      │
+│                                               │
+│ [ Send Eric a message... ]                    │
+└───────────────────────────────────────────────┘
+
+No login requirement for the viewer. Give every shared activity a long, unguessable tokenized URL.
+
+Connectivity shouldn't break the experience
+
+This is where mapper.one's remote-use focus can make it better than generic location sharing.
+
+The phone should continue recording GPS locally regardless of connectivity. When service is available:
+
+GPS points → batch → mapper.one API → web viewer
+
+When there's no service, the viewer sees:
+
+Last update 18 minutes ago
+Eric's last reported location was 4:17 PM. Their device may currently be outside cellular coverage.
+
+Once the phone reconnects, it uploads the missing track points and the route fills in.
+
+That's both technically practical and much more honest than pretending someone's location is "live" when it isn't.
+
+Two-way messaging makes it considerably better
+
+I'd absolutely include it, but keep v1 extremely lightweight.
+
+Viewer:
+
+"Running late?"
+
+Mapper user receives:
+
+Ann • 4:38 PM
+Running late?
+
+And they could have quick responses:
+
+👍 I'm good
+Running late
+Heading back
+Need help
+
+Messages should also queue offline. The user gets them when connectivity returns.
+
+You now have a lightweight communication channel specifically attached to an outdoor activity rather than trying to create another generic messaging app.
+
+Then SOS becomes obvious
+
+This architecture actually solves your earlier SOS question.
+
+During a shared activity:
+
+NORMAL
+
+Eric is here ●
+Last update 2 min ago
+
+If Eric hits SOS:
+
+EMERGENCY
+
+⚠️ ERIC REQUESTED HELP
+SOS activated 5:42 PM
+Location: 35.xxxxx, -82.xxxxx
+Last location update: 5:44 PM
+
+Call Eric | View coordinates
+
+And an SMS can alert the contact to open the existing tracking page.
+
+So you're not building two systems. You're building Live Adventure Sharing, with SOS layered onto it.
+
+There's another feature I'd strongly consider: expected return
+
+When sharing:
+
+Share this activity
+
+Contact: Ann
+
+Expected duration:
+2 hours
+
+Notify if I'm overdue:
+30 minutes
+
+Then the viewer gets useful context:
+
+Started: 3:15 PM
+Expected back: ~5:15 PM
+Last update: 4:52 PM
+
+That solves a real outdoor problem. Someone at home doesn't necessarily need continuous notifications; they mostly want to know where you went and whether you're okay.
+
+I'd avoid automatically declaring an emergency when someone is overdue. Instead, use language like "Eric's expected return time has passed" and let the contact decide what to do.
+
+There's a nice viral loop here too
+
+This feature naturally introduces mapper.one to other people.
+
+Every mountain biker who shares a ride sends another person a mapper.one link.
+
+The viewer sees:
+
+Live route powered by mapper.one
+Offline mapping and GPS tracking for wherever you go.
+
+Get mapper.one
+
+That could be a much better acquisition mechanism than asking existing users to explicitly invite friends.
+
+And after an activity ends, the same URL can become a permanent share page:
+
+Eric's Pisgah Ride
+18.4 miles • 2h 37m • 2,860 ft elevation
+August 20, 2026
+
+[map + route]
+
+Download mapper.one
+
+That creates shareable activity pages in addition to your existing trail/route content.
+
+I'd keep V1 surprisingly small
+
+You don't need to build a Strava competitor. I'd launch with:
+
+Start Tracking
+Share Live Route
+Select contact / send SMS link
+Anonymous web viewer with map
+Current/last-known location
+Route traveled
+Distance + elapsed time
+"Last updated X minutes ago"
+Simple viewer → user messages
+End Activity
+
+Then add expected-return alerts, SOS, multiple viewers, reactions/photos, and richer messaging afterward.
+
+The underlying model can be very simple:
+
+Activity → GPS Points → Share Token → Viewers → Messages

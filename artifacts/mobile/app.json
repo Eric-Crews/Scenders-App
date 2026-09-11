@@ -1,0 +1,116 @@
+{
+  "expo": {
+    "name": "mapper.one",
+    "slug": "mapperone",
+    "version": "1.0.2",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "mobile",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2f6b46"
+    },
+    "ios": {
+      "bundleIdentifier": "com.mapper.one",
+      "associatedDomains": ["applinks:mapper.one"],
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "mapper.one uses your location to show your position on the map and track your movement in the field.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "mapper.one keeps your off-route alerts firing while the app is in your pocket or your screen is locked during a route follow.",
+        "NSCameraUsageDescription": "mapper.one uses the camera so you can attach a photo to a waypoint along your route.",
+        "NSPhotoLibraryUsageDescription": "mapper.one needs access to your photo library so you can attach existing photos to waypoints along your route.",
+        "NSPhotoLibraryAddUsageDescription": "mapper.one saves waypoint photos to your Camera Roll so you always have a copy on your device.",
+          "NSContactsUsageDescription": "mapper.one can choose a trusted contact to receive your private live route link.",
+        "UIBackgroundModes": ["location"]
+      }
+    },
+    "android": {
+      "package": "com.mapper.one",
+      "versionCode": 2,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "mapper.one",
+              "pathPrefix": "/s/"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "mapper.one",
+              "pathPrefix": "/trails/"
+            }
+          ]
+        }
+      ],
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "CAMERA",
+        "READ_MEDIA_IMAGES"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "mapper.one uses your location to show your position on the map.",
+          "locationAlwaysAndWhenInUsePermission": "mapper.one keeps your off-route alerts firing while the app is in your pocket or your screen is locked during a route follow.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "isIosBackgroundLocationEnabled": true
+        }
+      ],
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "mapper.one needs access to your photo library so you can attach existing photos to waypoints along your route.",
+          "cameraPermission": "mapper.one uses the camera so you can attach a photo to a waypoint along your route."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ac90ab16-5672-4c49-a294-4cec23cc2896"
+      }
+    },
+    "assetBundlePatterns": ["assets/**/*"]
+  }
+}

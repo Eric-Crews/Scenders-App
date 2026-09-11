@@ -1,0 +1,23 @@
+{
+  "cli": {
+    "version": ">= 14.7.1",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "image": "latest",
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "autoIncrement": false,
+      "android": {
+        "image": "latest",
+        "buildType": "app-bundle"
+      }
+    }
+  }
+}
