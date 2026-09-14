@@ -55,7 +55,10 @@ export default function SharedRouteScreen() {
           const project = await fetchSharedPrivateProject(token);
           if (!cancelled) {
             setPrivateProject(project);
-            setRoute({ ...project.route, description: project.route.description ?? null });
+            setRoute({
+              ...project.route,
+              description: project.route.description ?? null,
+            });
           }
         } else {
           const r = await fetchSharedTrack(token);
@@ -96,15 +99,13 @@ export default function SharedRouteScreen() {
   const handleViewOnMap = () => {
     const id = ensureSaved();
     if (id) {
-      router.replace({ pathname: "/", params: { follow: id } });
+      router.replace({ pathname: "/map", params: { follow: id } });
     }
   };
 
   if (loading) {
     return (
-      <View
-        style={[styles.center, { backgroundColor: colors.background }]}
-      >
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -126,7 +127,7 @@ export default function SharedRouteScreen() {
           {error ?? "This route link is no longer available."}
         </Text>
         <Pressable
-          onPress={() => router.replace("/")}
+          onPress={() => router.replace("/map")}
           style={({ pressed }) => [
             styles.primaryBtn,
             {
@@ -148,7 +149,10 @@ export default function SharedRouteScreen() {
     <View
       style={[
         styles.container,
-        { backgroundColor: colors.background, paddingBottom: insets.bottom + 16 },
+        {
+          backgroundColor: colors.background,
+          paddingBottom: insets.bottom + 16,
+        },
       ]}
     >
       <ScrollView contentContainerStyle={styles.body}>
@@ -200,7 +204,10 @@ export default function SharedRouteScreen() {
                   key={waypoint.id}
                   style={[
                     styles.waypointCard,
-                    { backgroundColor: colors.card, borderColor: colors.border },
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
                   ]}
                 >
                   <View style={styles.waypointHeader}>
@@ -246,35 +253,37 @@ export default function SharedRouteScreen() {
 
       {mode !== "private" ? (
         <View style={styles.actions}>
-        <Pressable
-          onPress={handleSave}
-          style={({ pressed }) => [
-            styles.secondaryBtn,
-            { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
-          ]}
-        >
-          <Feather name="download" size={18} color={colors.foreground} />
-          <Text style={[styles.btnText, { color: colors.foreground }]}>
-            {savedId ? "Saved" : "Save to my routes"}
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={handleViewOnMap}
-          style={({ pressed }) => [
-            styles.primaryBtn,
-            { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          <Feather name="map" size={18} color={colors.primaryForeground} />
-          <Text style={[styles.btnText, { color: colors.primaryForeground }]}>
-            View on map
-          </Text>
-        </Pressable>
+          <Pressable
+            onPress={handleSave}
+            style={({ pressed }) => [
+              styles.secondaryBtn,
+              { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Feather name="download" size={18} color={colors.foreground} />
+            <Text style={[styles.btnText, { color: colors.foreground }]}>
+              {savedId ? "Saved" : "Save to my routes"}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={handleViewOnMap}
+            style={({ pressed }) => [
+              styles.primaryBtn,
+              { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <Feather name="map" size={18} color={colors.primaryForeground} />
+            <Text style={[styles.btnText, { color: colors.primaryForeground }]}>
+              View on map
+            </Text>
+          </Pressable>
         </View>
       ) : (
         <View style={styles.readOnlyNotice}>
           <Feather name="lock" size={16} color={colors.mutedForeground} />
-          <Text style={[styles.readOnlyText, { color: colors.mutedForeground }]}>
+          <Text
+            style={[styles.readOnlyText, { color: colors.mutedForeground }]}
+          >
             View-only private project. This project is not saved to your routes.
           </Text>
         </View>
@@ -316,9 +325,17 @@ const styles = StyleSheet.create({
   waypointCard: { borderWidth: 1, borderRadius: 14, padding: 14, gap: 9 },
   waypointHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
   waypointName: { fontFamily: "Inter_600SemiBold", fontSize: 15, flex: 1 },
-  waypointNotes: { fontFamily: "Inter_400Regular", fontSize: 14, lineHeight: 20 },
+  waypointNotes: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    lineHeight: 20,
+  },
   waypointPhoto: { width: "100%", height: 180, borderRadius: 10, marginTop: 2 },
-  emptyContext: { fontFamily: "Inter_400Regular", fontSize: 14, lineHeight: 20 },
+  emptyContext: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    lineHeight: 20,
+  },
   statRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   statText: { fontFamily: "Inter_500Medium", fontSize: 15 },
   actions: { paddingHorizontal: 24, gap: 12 },
