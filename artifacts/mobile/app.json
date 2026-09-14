@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Scenders Ride",
-    "slug": "scenders-ride",
+    "slug": "scenders",
     "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
