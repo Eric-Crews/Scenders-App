@@ -660,7 +660,7 @@ export default function LibraryScreen() {
   // and opens its detail sheet via the map's ?dataset= param).
   const viewOnMap = (ds?: Dataset) => {
     if (!ds) return;
-    router.push({ pathname: "/", params: { dataset: ds.id } });
+    router.push({ pathname: "/map", params: { dataset: ds.id } });
   };
 
   const confirmRemove = (ds: Dataset) => {
@@ -703,7 +703,7 @@ export default function LibraryScreen() {
       <Pressable
         onPress={() => {
           setActiveOnly(item.id);
-          router.push("/");
+          router.push("/map");
         }}
         style={styles.cardMain}
       >
