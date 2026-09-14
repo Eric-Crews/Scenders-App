@@ -168,7 +168,7 @@ export default function WaypointsScreen() {
               notes from the field.
             </Text>
             <Pressable
-              onPress={() => router.push("/")}
+              onPress={() => router.push("/map")}
               style={({ pressed }) => [
                 styles.emptyBtn,
                 {
@@ -266,7 +266,7 @@ export default function WaypointsScreen() {
               onPress={() => {
                 setFullscreen(false);
                 setSelected(null);
-                router.push("/");
+                router.push("/map");
               }}
               style={({ pressed }) => [
                 styles.detailBtn,
