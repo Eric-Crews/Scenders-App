@@ -21,9 +21,17 @@ concurrency:
 
 jobs:
   build:
-    name: Android and iOS preview
+    name: ${{ matrix.name }} preview
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Android
+            platform: android
+          - name: iOS
+            platform: ios
 
     steps:
       - name: Check out source
@@ -53,11 +61,11 @@ jobs:
       - name: Verify Expo authentication
         run: eas whoami
 
-      - name: Build Android and iOS previews
+      - name: Build ${{ matrix.name }} preview
         working-directory: artifacts/mobile
         run: >-
           eas build
-          --platform all
+          --platform ${{ matrix.platform }}
           --profile preview
           --non-interactive
           --wait
