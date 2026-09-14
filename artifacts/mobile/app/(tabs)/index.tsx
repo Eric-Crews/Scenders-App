@@ -21,7 +21,6 @@ import {
   ScendersSectionHeading,
   ScendersWordmark,
 } from "@/components/ScendersChrome";
-import { RideRoutePreview } from "@/components/RideRoutePreview";
 import { scendersDesign as design } from "@/constants/scendersDesign";
 import { useMaps } from "@/contexts/MapsContext";
 import { useRecording } from "@/contexts/RecordingContext";
@@ -33,8 +32,10 @@ import { formatDistance } from "@/lib/units";
 const WEB_TOP_INSET = Platform.OS === "web" ? 28 : 0;
 const WEB_BOTTOM_INSET = Platform.OS === "web" ? 84 : 0;
 const HOME_PRIMER_KEY = "scenders.home-primer.v1";
+const FEATURED_RIDE_RADIUS_MILES = 20;
 
 type Coordinates = { latitude: number; longitude: number };
+type LocationState = "locating" | "available" | "denied" | "unavailable";
 
 function distanceMiles(a: Coordinates, b: Coordinates): number {
   const earthRadiusMiles = 3958.8;
@@ -50,7 +51,10 @@ function distanceMiles(a: Coordinates, b: Coordinates): number {
 }
 
 function guideDistance(guide: RideGuide, origin: Coordinates): number | null {
-  const point = guide.trackCoordinates[0];
+  const point =
+    guide.lat !== null && guide.lng !== null
+      ? { lat: guide.lat, lng: guide.lng }
+      : guide.trackCoordinates[0];
   if (!point) return null;
   return distanceMiles(origin, {
     latitude: point.lat,
@@ -251,6 +255,7 @@ export default function HomeScreen() {
   const [guides, setGuides] = useState<RideGuide[]>([]);
   const [guidesLoading, setGuidesLoading] = useState(true);
   const [lastLocation, setLastLocation] = useState<Coordinates | null>(null);
+  const [locationState, setLocationState] = useState<LocationState>("locating");
   const [showPrimer, setShowPrimer] = useState(false);
 
   useEffect(() => {
@@ -260,15 +265,53 @@ export default function HomeScreen() {
         if (mounted) setShowPrimer(seen !== "seen");
       })
       .catch(() => {});
-    Location.getLastKnownPositionAsync()
-      .then((location) => {
-        if (!mounted || !location) return;
-        setLastLocation({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const locate = async () => {
+      try {
+        let permission = await Location.getForegroundPermissionsAsync();
+        if (permission.status !== "granted" && permission.canAskAgain) {
+          permission = await Location.requestForegroundPermissionsAsync();
+        }
+        if (!mounted) return;
+        if (permission.status !== "granted") {
+          setLocationState("denied");
+          return;
+        }
+
+        const cached = await Location.getLastKnownPositionAsync();
+        if (mounted && cached) {
+          setLastLocation({
+            latitude: cached.coords.latitude,
+            longitude: cached.coords.longitude,
+          });
+          setLocationState("available");
+        }
+
+        const current = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
         });
-      })
-      .catch(() => {});
+        if (!mounted) return;
+        setLastLocation({
+          latitude: current.coords.latitude,
+          longitude: current.coords.longitude,
+        });
+        setLocationState("available");
+      } catch {
+        if (!mounted) return;
+        setLocationState((state) =>
+          state === "available" ? state : "unavailable",
+        );
+      }
+    };
+
+    void locate();
     return () => {
       mounted = false;
     };
@@ -292,24 +335,44 @@ export default function HomeScreen() {
     }, []),
   );
 
-  const orderedGuides = useMemo(() => {
-    if (!lastLocation) return guides;
-    return [...guides].sort((a, b) => {
-      const aDistance = guideDistance(a, lastLocation);
-      const bDistance = guideDistance(b, lastLocation);
-      if (aDistance === null && bDistance === null) return 0;
-      if (aDistance === null) return 1;
-      if (bDistance === null) return -1;
-      return aDistance - bDistance;
-    });
+  const rankedGuides = useMemo(() => {
+    return guides
+      .map((guide) => ({
+        guide,
+        distance: lastLocation ? guideDistance(guide, lastLocation) : null,
+      }))
+      .filter(
+        (item) =>
+          !lastLocation ||
+          (item.distance !== null &&
+            item.distance <= FEATURED_RIDE_RADIUS_MILES),
+      )
+      .sort((a, b) => {
+        if (a.guide.rating === null && b.guide.rating !== null) return 1;
+        if (a.guide.rating !== null && b.guide.rating === null) return -1;
+        if (a.guide.rating !== null && b.guide.rating !== null) {
+          const ratingDifference = b.guide.rating - a.guide.rating;
+          if (ratingDifference !== 0) return ratingDifference;
+        }
+        if (a.distance === null && b.distance === null) {
+          return a.guide.title.localeCompare(b.guide.title);
+        }
+        if (a.distance === null) return 1;
+        if (b.distance === null) return -1;
+        return a.distance - b.distance;
+      });
   }, [guides, lastLocation]);
 
-  const featuredGuide = orderedGuides[0] ?? null;
-  const nearbyGuides = orderedGuides.slice(1, 4);
-  const featuredDistance =
-    featuredGuide && lastLocation
-      ? guideDistance(featuredGuide, lastLocation)
-      : null;
+  const waitingForLocation = locationState === "locating" && !lastLocation;
+  const featuredGuide = waitingForLocation
+    ? null
+    : (rankedGuides[0]?.guide ?? null);
+  const nearbyGuides = waitingForLocation
+    ? []
+    : rankedGuides.slice(1, 4).map((item) => item.guide);
+  const featuredDistance = waitingForLocation
+    ? null
+    : (rankedGuides[0]?.distance ?? null);
   const recentTracks = useMemo(
     () => [...tracks].sort((a, b) => b.createdAt - a.createdAt).slice(0, 3),
     [tracks],
@@ -389,16 +452,9 @@ export default function HomeScreen() {
                 contentFit="cover"
                 transition={220}
               />
-            ) : featuredGuide ? (
-              <View style={StyleSheet.absoluteFill}>
-                <RideRoutePreview
-                  points={featuredGuide.trackCoordinates}
-                  height={318}
-                />
-              </View>
             ) : (
               <View style={styles.heroEmptyArt}>
-                {guidesLoading ? (
+                {guidesLoading || locationState === "locating" ? (
                   <ActivityIndicator color={design.color.orangeBright} />
                 ) : (
                   <Feather
@@ -423,10 +479,14 @@ export default function HomeScreen() {
                 <View style={styles.heroLabelDot} />
                 <Text style={styles.heroLabelText}>
                   {featuredDistance !== null
-                    ? `NEARBY · ${Math.max(1, Math.round(featuredDistance))} MI`
+                    ? `TOP RATED NEARBY · ${Math.max(1, Math.round(featuredDistance))} MI`
                     : featuredGuide
                       ? "FEATURED RIDE"
-                      : "RIDE LIBRARY"}
+                      : locationState === "available"
+                        ? "NO RIDES WITHIN 20 MI"
+                        : locationState === "locating"
+                          ? "FINDING RIDES NEAR YOU"
+                          : "RIDE LIBRARY"}
                 </Text>
               </View>
               <View style={styles.heroArrow}>
@@ -444,7 +504,10 @@ export default function HomeScreen() {
                   : "CURATED + COMMUNITY ROUTES"}
               </Text>
               <Text style={styles.heroTitle} numberOfLines={2}>
-                {featuredGuide?.title || "Find your next line."}
+                {featuredGuide?.title ||
+                  (locationState === "available"
+                    ? "No nearby ride guide yet."
+                    : "Find your next line.")}
               </Text>
               {featuredGuide ? (
                 <View style={styles.heroMetaRow}>
@@ -456,7 +519,9 @@ export default function HomeScreen() {
                 </View>
               ) : (
                 <Text style={styles.heroBody}>
-                  Browse ride guides and GPX tracks built for the map.
+                  {locationState === "available"
+                    ? "Explore the full library to find a ride beyond your 20-mile radius."
+                    : "Browse ride guides and GPX tracks built for the map."}
                 </Text>
               )}
             </View>
@@ -621,7 +686,7 @@ export default function HomeScreen() {
             <View style={styles.section}>
               <ScendersSectionHeading
                 eyebrow="KEEP EXPLORING"
-                title="More rides"
+                title={lastLocation ? "More nearby rides" : "More rides"}
                 actionLabel="Explore"
                 onAction={() => router.push("/rides")}
               />

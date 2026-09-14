@@ -90,9 +90,10 @@ The primary tabs are **Home**, **Explore**, **Record**, **Rides**, and **Saved**
   `followDataset`, and community-guide parameters.
 - Recording continues when navigating away from the map; Home must show a
   Resume ride state whenever a recording is active.
-- No location permission is requested just to render Home. Nearby sorting may
-  use a previously available last-known position and otherwise falls back to
-  the server's ride order.
+- Home requests foreground location access so it can feature the highest-rated
+  ride within 20 miles. A last-known fix renders quickly while a current fix is
+  acquired; denied or unavailable location falls back to top-rated library
+  rides without blocking the rest of Home.
 - Offline state is derived from saved regions and tile counts, never inferred
   from network state alone.
 - Explore filters may use only real fields supplied by ride-guide data:

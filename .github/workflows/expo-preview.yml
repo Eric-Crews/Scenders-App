@@ -11,6 +11,16 @@ on:
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Preview platform
+        required: true
+        default: android
+        type: choice
+        options:
+          - android
+          - ios
+          - all
 
 permissions:
   contents: read
@@ -20,18 +30,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: ${{ matrix.name }} preview
+  android-preview:
+    name: Android preview
+    if: >-
+      github.event_name == 'push' ||
+      inputs.platform == 'android' ||
+      inputs.platform == 'all'
     runs-on: ubuntu-latest
     timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Android
-            platform: android
-          - name: iOS
-            platform: ios
 
     steps:
       - name: Check out source
@@ -61,12 +67,58 @@ jobs:
       - name: Verify Expo authentication
         run: eas whoami
 
-      - name: Build ${{ matrix.name }} preview
+      - name: Build Android preview
         working-directory: artifacts/mobile
         run: >-
           eas build
-          --platform ${{ matrix.platform }}
+          --platform android
           --profile preview
           --non-interactive
           --wait
-          --message "Modern Scenders production UI review"
+          --message "Nearby rides and image-first library review"
+
+  ios-preview:
+    name: iOS preview
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      (inputs.platform == 'ios' || inputs.platform == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.1
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Verify Expo authentication
+        run: eas whoami
+
+      - name: Build iOS preview
+        working-directory: artifacts/mobile
+        run: >-
+          eas build
+          --platform ios
+          --profile preview
+          --non-interactive
+          --wait
+          --message "Nearby rides and image-first library review"

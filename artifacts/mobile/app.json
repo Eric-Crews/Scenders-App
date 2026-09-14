@@ -2,7 +2,7 @@
   "expo": {
     "name": "Scenders Ride",
     "slug": "scenders",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "scenders",
@@ -18,7 +18,7 @@
       "associatedDomains": ["applinks:scenders.com", "applinks:mapper.one"],
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Scenders Ride uses your location to show your position and record your ride.",
+        "NSLocationWhenInUseUsageDescription": "Scenders Ride uses your location to show nearby rides, display your position, and record your ride.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Scenders Ride keeps route guidance and off-route alerts working while your phone is locked or in your pocket.",
         "NSCameraUsageDescription": "Scenders Ride uses the camera so you can attach a photo to a waypoint.",
         "NSPhotoLibraryUsageDescription": "Scenders Ride uses your photo library so you can attach existing photos to waypoints.",
@@ -29,7 +29,7 @@
     },
     "android": {
       "package": "com.scenders.ride",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#D2691E"
@@ -85,7 +85,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Scenders Ride uses your location to show your position and record your ride.",
+          "locationWhenInUsePermission": "Scenders Ride uses your location to show nearby rides, display your position, and record your ride.",
           "locationAlwaysAndWhenInUsePermission": "Scenders Ride keeps route guidance and off-route alerts working while your phone is locked or in your pocket.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true,

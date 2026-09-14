@@ -88,7 +88,7 @@ export function RideRoutePreview({ points, height = 180, label }: Props) {
       ) : (
         <View style={styles.empty}>
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-            Route track coming soon
+            Route preview unavailable
           </Text>
         </View>
       )}

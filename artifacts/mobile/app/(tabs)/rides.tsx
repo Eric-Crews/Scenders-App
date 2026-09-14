@@ -1,4 +1,6 @@
 import { Feather } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
@@ -14,7 +16,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { RideRoutePreview } from "@/components/RideRoutePreview";
 import { useColors } from "@/hooks/useColors";
 import {
   filterRideGuides,
@@ -31,6 +32,101 @@ const DISTANCE_FILTERS = [10, 25, 50] as const;
 function miles(value: number | null): string | null {
   if (value === null) return null;
   return `${Number.isInteger(value) ? value : value.toFixed(1)} mi`;
+}
+
+function RideCard({ item, onPress }: { item: RideGuide; onPress: () => void }) {
+  const colors = useColors();
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageUrl = item.featuredImage || item.thumbnailUrl;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ride guide for ${item.title}`}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          opacity: pressed ? 0.88 : 1,
+        },
+      ]}
+    >
+      <View
+        style={[styles.cardMedia, { backgroundColor: colors.routeBackground }]}
+      >
+        {imageUrl && !imageFailed ? (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.cardImage}
+            contentFit="cover"
+            transition={180}
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <View style={styles.imageFallback}>
+            <Feather name="book-open" size={28} color={colors.primary} />
+            <Text
+              style={[
+                styles.imageFallbackText,
+                { color: colors.routeForeground },
+              ]}
+            >
+              Full ride guide
+            </Text>
+          </View>
+        )}
+        {imageUrl && !imageFailed ? (
+          <LinearGradient
+            colors={["rgba(0,0,0,0.02)", "rgba(0,0,0,0.62)"]}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : null}
+        <View style={styles.mediaBadge}>
+          <Text style={styles.mediaBadgeText}>
+            {item.difficulty || "RIDE GUIDE"}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.cardBody}>
+        <Text style={[styles.location, { color: colors.primary }]}>
+          {[item.city, item.state].filter(Boolean).join(", ") ||
+            item.location ||
+            "Scenders ride guide"}
+        </Text>
+        <Text
+          style={[styles.cardTitle, { color: colors.foreground }]}
+          numberOfLines={2}
+        >
+          {item.title}
+        </Text>
+        <View style={styles.stats}>
+          {item.rating !== null ? (
+            <Text style={[styles.stat, { color: colors.foreground }]}>
+              ★ {item.rating.toFixed(1)}
+            </Text>
+          ) : null}
+          {miles(item.lengthMiles) ? (
+            <Text style={[styles.stat, { color: colors.mutedForeground }]}>
+              {miles(item.lengthMiles)}
+            </Text>
+          ) : null}
+          {item.elevationFeet !== null ? (
+            <Text style={[styles.stat, { color: colors.mutedForeground }]}>
+              {Math.round(item.elevationFeet).toLocaleString()} ft
+            </Text>
+          ) : null}
+          <Feather
+            name="arrow-up-right"
+            size={18}
+            color={colors.primary}
+            style={{ marginLeft: "auto" }}
+          />
+        </View>
+      </View>
+    </Pressable>
+  );
 }
 
 export default function RidesScreen() {
@@ -299,65 +395,12 @@ export default function RidesScreen() {
           />
         }
         renderItem={({ item }) => (
-          <Pressable
+          <RideCard
+            item={item}
             onPress={() =>
               router.push(`/rides/${encodeURIComponent(item.slug)}`)
             }
-            style={({ pressed }) => [
-              styles.card,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                opacity: pressed ? 0.88 : 1,
-              },
-            ]}
-          >
-            <RideRoutePreview
-              points={item.trackCoordinates}
-              height={172}
-              label={item.difficulty || undefined}
-            />
-            <View style={styles.cardBody}>
-              <Text style={[styles.location, { color: colors.primary }]}>
-                {[item.city, item.state].filter(Boolean).join(", ") ||
-                  item.location ||
-                  "Scenders ride guide"}
-              </Text>
-              <Text
-                style={[styles.cardTitle, { color: colors.foreground }]}
-                numberOfLines={2}
-              >
-                {item.title}
-              </Text>
-              <View style={styles.stats}>
-                {item.rating !== null ? (
-                  <Text style={[styles.stat, { color: colors.foreground }]}>
-                    ★ {item.rating.toFixed(1)}
-                  </Text>
-                ) : null}
-                {miles(item.lengthMiles) ? (
-                  <Text
-                    style={[styles.stat, { color: colors.mutedForeground }]}
-                  >
-                    {miles(item.lengthMiles)}
-                  </Text>
-                ) : null}
-                {item.elevationFeet !== null ? (
-                  <Text
-                    style={[styles.stat, { color: colors.mutedForeground }]}
-                  >
-                    {Math.round(item.elevationFeet).toLocaleString()} ft
-                  </Text>
-                ) : null}
-                <Feather
-                  name="arrow-up-right"
-                  size={18}
-                  color={colors.primary}
-                  style={{ marginLeft: "auto" }}
-                />
-              </View>
-            </View>
-          </Pressable>
+          />
         )}
         ListEmptyComponent={
           loading ? (
@@ -491,6 +534,43 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     overflow: "hidden",
     padding: 8,
+  },
+  cardMedia: {
+    borderRadius: 15,
+    height: 190,
+    overflow: "hidden",
+    position: "relative",
+  },
+  cardImage: { ...StyleSheet.absoluteFillObject },
+  imageFallback: {
+    alignItems: "center",
+    flex: 1,
+    gap: 10,
+    justifyContent: "center",
+  },
+  imageFallbackText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 12,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
+  mediaBadge: {
+    backgroundColor: "rgba(0,0,0,0.66)",
+    borderColor: "rgba(255,255,255,0.18)",
+    borderRadius: 999,
+    borderWidth: 1,
+    left: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    position: "absolute",
+    top: 12,
+  },
+  mediaBadgeText: {
+    color: "#FFFFFF",
+    fontFamily: "Inter_700Bold",
+    fontSize: 9,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
   },
   cardBody: { paddingHorizontal: 10, paddingBottom: 10, paddingTop: 14 },
   location: {

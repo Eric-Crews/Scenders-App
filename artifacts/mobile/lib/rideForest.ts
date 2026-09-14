@@ -9,6 +9,34 @@ export type RideGuideTrackPoint = {
   ele?: number;
 };
 
+export type RideGuideEditorialSection = {
+  heading: string;
+  content: string;
+};
+
+export type RideGuideFaq = {
+  question: string;
+  answer: string;
+};
+
+export type RideGuideSidebarBox = {
+  type: string | null;
+  title: string;
+  content: string | null;
+  items: string[];
+};
+
+export type RideGuideContent = {
+  magazineTitle: string | null;
+  introduction: string | null;
+  sections: RideGuideEditorialSection[];
+  faq: RideGuideFaq[];
+  sidebarBoxes: RideGuideSidebarBox[];
+  conclusion: string | null;
+  relatedTopics: string[];
+  caveats: string[];
+};
+
 export type RideGuide = {
   id: string;
   slug: string;
@@ -18,6 +46,8 @@ export type RideGuide = {
   citySlug: string | null;
   state: string | null;
   stateSlug: string | null;
+  lat: number | null;
+  lng: number | null;
   lengthMiles: number | null;
   elevationFeet: number | null;
   difficulty: string | null;
@@ -31,6 +61,7 @@ export type RideGuide = {
   seoTitle: string | null;
   seoDescription: string | null;
   tags: string[];
+  content: RideGuideContent | null;
   trackCoordinates: RideGuideTrackPoint[];
   updatedAt: string | null;
 };
@@ -69,13 +100,79 @@ function identifierOrNull(value: unknown): string | null {
   return stringOrNull(value);
 }
 
+function recordOrNull(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function textList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(stringOrNull)
+    .filter((item): item is string => item !== null);
+}
+
+function normalizeContent(value: unknown): RideGuideContent | null {
+  const source = recordOrNull(value);
+  if (!source) return null;
+
+  const sections = Array.isArray(source.sections)
+    ? source.sections.flatMap((item): RideGuideEditorialSection[] => {
+        const section = recordOrNull(item);
+        const heading = stringOrNull(section?.heading);
+        const content = stringOrNull(section?.content);
+        return heading && content ? [{ heading, content }] : [];
+      })
+    : [];
+  const faq = Array.isArray(source.faq)
+    ? source.faq.flatMap((item): RideGuideFaq[] => {
+        const entry = recordOrNull(item);
+        const question = stringOrNull(entry?.question);
+        const answer = stringOrNull(entry?.answer);
+        return question && answer ? [{ question, answer }] : [];
+      })
+    : [];
+  const sidebarBoxes = Array.isArray(source.sidebarBoxes)
+    ? source.sidebarBoxes.flatMap((item): RideGuideSidebarBox[] => {
+        const box = recordOrNull(item);
+        const title = stringOrNull(box?.title);
+        if (!title) return [];
+        return [
+          {
+            type: stringOrNull(box?.type),
+            title,
+            content: stringOrNull(box?.content),
+            items: textList(box?.items),
+          },
+        ];
+      })
+    : [];
+
+  const content: RideGuideContent = {
+    magazineTitle: stringOrNull(source.magazineTitle),
+    introduction: stringOrNull(source.introduction),
+    sections,
+    faq,
+    sidebarBoxes,
+    conclusion: stringOrNull(source.conclusion),
+    relatedTopics: textList(source.relatedTopics),
+    caveats: textList(source.caveats),
+  };
+  return Object.values(content).some((item) =>
+    Array.isArray(item) ? item.length > 0 : item !== null,
+  )
+    ? content
+    : null;
+}
+
 function normalizeTrack(value: unknown): RideGuideTrackPoint[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((point): RideGuideTrackPoint[] => {
-    if (!point || typeof point !== "object") return [];
-    const source = point as Record<string, unknown>;
-    const lat = Number(source.lat);
-    const lng = Number(source.lng);
+    const source = recordOrNull(point);
+    const tuple = Array.isArray(point) ? point : null;
+    const lat = Number(tuple ? tuple[1] : source?.lat);
+    const lng = Number(tuple ? tuple[0] : source?.lng);
     if (
       !Number.isFinite(lat) ||
       !Number.isFinite(lng) ||
@@ -86,7 +183,7 @@ function normalizeTrack(value: unknown): RideGuideTrackPoint[] {
     ) {
       return [];
     }
-    const ele = numberOrNull(source.ele);
+    const ele = numberOrNull(tuple ? tuple[2] : source?.ele);
     return [{ lat, lng, ...(ele !== null ? { ele } : {}) }];
   });
 }
@@ -98,6 +195,7 @@ function normalizeRideGuide(value: unknown): RideGuide | null {
   const slug = stringOrNull(source.slug);
   const title = stringOrNull(source.title);
   if (!id || !slug || !title) return null;
+  const track = recordOrNull(source.track);
 
   return {
     id,
@@ -108,6 +206,8 @@ function normalizeRideGuide(value: unknown): RideGuide | null {
     citySlug: stringOrNull(source.citySlug),
     state: stringOrNull(source.state),
     stateSlug: stringOrNull(source.stateSlug),
+    lat: numberOrNull(source.lat),
+    lng: numberOrNull(source.lng),
     lengthMiles: numberOrNull(source.lengthMiles),
     elevationFeet: numberOrNull(source.elevationFeet),
     difficulty: stringOrNull(source.difficulty),
@@ -123,13 +223,11 @@ function normalizeRideGuide(value: unknown): RideGuide | null {
     generatedDescription: stringOrNull(source.generatedDescription),
     seoTitle: stringOrNull(source.seoTitle),
     seoDescription: stringOrNull(source.seoDescription),
-    tags: Array.isArray(source.tags)
-      ? source.tags
-          .filter((tag): tag is string => typeof tag === "string")
-          .map((tag) => tag.trim())
-          .filter(Boolean)
-      : [],
-    trackCoordinates: normalizeTrack(source.trackCoordinates),
+    tags: textList(source.tags),
+    content: normalizeContent(source.content),
+    trackCoordinates: normalizeTrack(
+      source.trackCoordinates ?? source.gpxCoordinates ?? track?.coordinates,
+    ),
     updatedAt: stringOrNull(source.updatedAt),
   };
 }
