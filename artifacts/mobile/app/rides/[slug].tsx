@@ -93,7 +93,7 @@ export default function RideDetailScreen() {
     if (!dataset) return;
     setActiveOnly(dataset.id);
     router.push({
-      pathname: "/",
+      pathname: "/map",
       params: follow ? { followDataset: dataset.id } : { dataset: dataset.id },
     });
   };
