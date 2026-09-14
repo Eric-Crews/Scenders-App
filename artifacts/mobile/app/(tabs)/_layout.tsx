@@ -1,188 +1,133 @@
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
-import { SymbolView } from "expo-symbols";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 
-import { useColors } from "@/hooks/useColors";
+import { scendersDesign as design } from "@/constants/scendersDesign";
 
-function NativeTabLayout() {
+const isIOS = Platform.OS === "ios";
+const isWeb = Platform.OS === "web";
+
+function TabIcon({
+  name,
+  color,
+}: {
+  name: React.ComponentProps<typeof Feather>["name"];
+  color: string;
+}) {
+  return <Feather name={name} size={21} color={color} />;
+}
+
+function RecordIcon({ focused }: { focused: boolean }) {
   return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="rides">
-        <Icon sf={{ default: "map", selected: "map.fill" }} />
-        <Label>Explore</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="index">
-        <Icon
-          sf={{ default: "mappin.and.ellipse", selected: "mappin.and.ellipse" }}
-        />
-        <Label>Ride</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="library">
-        <Icon
-          sf={{
-            default: "square.stack.3d.up",
-            selected: "square.stack.3d.up.fill",
-          }}
-        />
-        <Label>Saved</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="tracks">
-        <Icon
-          sf={{
-            default: "point.topleft.down.curvedto.point.bottomright.up",
-            selected: "point.topleft.down.curvedto.point.bottomright.up",
-          }}
-        />
-        <Label>My Rides</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="about">
-        <Icon sf={{ default: "info.circle", selected: "info.circle.fill" }} />
-        <Label>More</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <View style={[styles.recordIcon, focused && styles.recordIconFocused]}>
+      <Feather
+        name="navigation"
+        size={19}
+        color={focused ? design.color.black : design.color.text}
+      />
+    </View>
   );
 }
 
-function ClassicTabLayout() {
-  const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const isIOS = Platform.OS === "ios";
-  const isWeb = Platform.OS === "web";
-
+export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
-        tabBarLabelStyle: { fontFamily: "Inter_500Medium", fontSize: 11 },
+        tabBarActiveTintColor: design.color.orangeBright,
+        tabBarInactiveTintColor: design.color.textFaint,
+        tabBarHideOnKeyboard: true,
+        tabBarLabelStyle: styles.tabLabel,
+        tabBarItemStyle: styles.tabItem,
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: isWeb ? 1 : 0,
-          borderTopColor: colors.border,
+          backgroundColor: isIOS ? "transparent" : design.color.canvas,
+          borderTopColor: design.color.line,
+          borderTopWidth: 1,
           elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
+          paddingTop: 7,
+          ...(isWeb ? { height: 84, paddingBottom: 10 } : {}),
         },
         tabBarBackground: () =>
           isIOS ? (
             <BlurView
-              intensity={100}
-              tint={isDark ? "dark" : "light"}
+              intensity={96}
+              tint="dark"
               style={StyleSheet.absoluteFill}
             />
-          ) : isWeb ? (
+          ) : (
             <View
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
+                { backgroundColor: design.color.canvas },
               ]}
             />
-          ) : null,
+          ),
       }}
     >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Home",
+          tabBarIcon: ({ color }) => <TabIcon name="home" color={color} />,
+        }}
+      />
       <Tabs.Screen
         name="rides"
         options={{
           title: "Explore",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="map" tintColor={color} size={24} />
-            ) : (
-              <Feather name="compass" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color }) => <TabIcon name="compass" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="index"
+        name="map"
         options={{
-          title: "Ride",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView
-                name="mappin.and.ellipse"
-                tintColor={color}
-                size={24}
-              />
-            ) : (
-              <Feather name="navigation" size={22} color={color} />
-            ),
+          title: "Record",
+          tabBarIcon: ({ focused }) => <RecordIcon focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="tracks"
+        options={{
+          title: "Rides",
+          tabBarIcon: ({ color }) => <TabIcon name="activity" color={color} />,
         }}
       />
       <Tabs.Screen
         name="library"
         options={{
           title: "Saved",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView
-                name="square.stack.3d.up"
-                tintColor={color}
-                size={24}
-              />
-            ) : (
-              <Feather name="bookmark" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color }) => <TabIcon name="bookmark" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="waypoints"
-        options={{
-          title: "Waypoints",
-          href: null,
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView
-                name="mappin.and.ellipse"
-                tintColor={color}
-                size={24}
-              />
-            ) : (
-              <Feather name="map-pin" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="tracks"
-        options={{
-          title: "My Rides",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView
-                name="point.topleft.down.curvedto.point.bottomright.up"
-                tintColor={color}
-                size={24}
-              />
-            ) : (
-              <Feather name="activity" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="about"
-        options={{
-          title: "More",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="info.circle" tintColor={color} size={24} />
-            ) : (
-              <Feather name="menu" size={22} color={color} />
-            ),
-        }}
-      />
+      <Tabs.Screen name="waypoints" options={{ href: null }} />
+      <Tabs.Screen name="about" options={{ href: null }} />
     </Tabs>
   );
 }
 
-export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
-  return <ClassicTabLayout />;
-}
+const styles = StyleSheet.create({
+  tabLabel: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 9,
+    letterSpacing: 0.15,
+  },
+  tabItem: { paddingVertical: 1 },
+  recordIcon: {
+    alignItems: "center",
+    backgroundColor: design.color.surfaceRaised,
+    borderColor: design.color.lineStrong,
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: "center",
+    marginTop: -11,
+    width: 36,
+  },
+  recordIconFocused: {
+    backgroundColor: design.color.orangeBright,
+    borderColor: design.color.orangeBright,
+  },
+});
