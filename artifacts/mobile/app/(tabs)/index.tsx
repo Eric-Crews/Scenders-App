@@ -13,18 +13,20 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
+  ScendersHeader,
   ScendersSectionHeading,
   ScendersWordmark,
 } from "@/components/ScendersChrome";
 import { scendersDesign as design } from "@/constants/scendersDesign";
 import { useMaps } from "@/contexts/MapsContext";
 import { useRecording } from "@/contexts/RecordingContext";
-import { listRideGuides, type RideGuide } from "@/lib/rideForest";
+import { listHomeRideGuides, type RideGuide } from "@/lib/rideForest";
 import { formatDuration } from "@/lib/trackRecording";
 import type { Track } from "@/lib/types";
 import { formatDistance } from "@/lib/units";
@@ -317,23 +319,24 @@ export default function HomeScreen() {
     };
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      let mounted = true;
-      setGuidesLoading(true);
-      listRideGuides()
-        .then((next) => {
-          if (mounted) setGuides(next);
-        })
-        .catch(() => {})
-        .finally(() => {
-          if (mounted) setGuidesLoading(false);
-        });
-      return () => {
-        mounted = false;
-      };
-    }, []),
-  );
+  useEffect(() => {
+    if (locationState === "locating") return;
+    let mounted = true;
+    setGuidesLoading(true);
+    listHomeRideGuides(lastLocation)
+      .then((next) => {
+        if (mounted) setGuides(next);
+      })
+      .catch(() => {
+        if (mounted) setGuides([]);
+      })
+      .finally(() => {
+        if (mounted) setGuidesLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [lastLocation, locationState]);
 
   const rankedGuides = useMemo(() => {
     return guides
@@ -408,25 +411,44 @@ export default function HomeScreen() {
         }}
       >
         <View style={styles.content}>
-          <View style={styles.header}>
-            <ScendersWordmark />
-            <Pressable
-              accessibilityLabel="Open settings and more"
-              accessibilityRole="button"
-              onPress={() => router.push("/about")}
-              style={({ pressed }) => [
-                styles.headerButton,
-                pressed && styles.rowPressed,
-              ]}
-            >
-              <Feather name="menu" size={20} color={design.color.text} />
-            </Pressable>
-          </View>
+          <ScendersHeader />
 
           <View style={styles.taglineRow}>
-            <View style={styles.taglineRule} />
             <Text style={styles.tagline}>ASCEND. DESCEND. REPEAT.</Text>
           </View>
+
+          <View style={styles.locationHeaderRow}>
+            <Feather name="map-pin" size={12} color={design.color.textMuted} />
+            <Text style={styles.locationHeaderText}>
+              {locationState === "available" && lastLocation
+                ? (featuredGuide ? rideLocation(featuredGuide).toUpperCase() : "YOUR LOCATION")
+                : "FINDING RIDES NEAR YOU"}
+            </Text>
+            {locationState === "available" && <Feather name="chevron-down" size={14} color={design.color.textMuted} />}
+          </View>
+
+          <View style={styles.homeSearchContainer}>
+            <Feather name="search" size={18} color={design.color.textMuted} style={styles.homeSearchIcon} />
+            <TextInput
+              style={styles.homeSearchInput}
+              placeholder="Search trails, routes, or places"
+              placeholderTextColor={design.color.textMuted}
+              returnKeyType="search"
+              onSubmitEditing={(e) => {
+                if (e.nativeEvent.text.trim()) {
+                  router.push({ pathname: "/rides", params: { q: e.nativeEvent.text.trim() } });
+                }
+              }}
+            />
+          </View>
+
+          {featuredGuide ? (
+            <View style={styles.featuredGuideLabel}>
+              <Text style={styles.featuredGuideLabelText} numberOfLines={1}>
+                {featuredGuide.title}
+              </Text>
+            </View>
+          ) : null}
 
           <Pressable
             accessibilityRole="button"
@@ -467,7 +489,7 @@ export default function HomeScreen() {
             )}
             <LinearGradient
               colors={[
-                "rgba(0,0,0,0.08)",
+                "rgba(0,0,0,0.0)",
                 "rgba(0,0,0,0.42)",
                 "rgba(0,0,0,0.94)",
               ]}
@@ -476,83 +498,77 @@ export default function HomeScreen() {
             />
             <View style={styles.heroTopRow}>
               <View style={styles.heroLabel}>
-                <View style={styles.heroLabelDot} />
                 <Text style={styles.heroLabelText}>
                   {featuredDistance !== null
-                    ? `TOP RATED NEARBY · ${Math.max(1, Math.round(featuredDistance))} MI`
+                    ? "FEATURED NEAR YOU"
                     : featuredGuide
                       ? "FEATURED RIDE"
                       : locationState === "available"
                         ? "NO RIDES WITHIN 20 MI"
                         : locationState === "locating"
-                          ? "FINDING RIDES NEAR YOU"
+                          ? "LOCATING"
                           : "RIDE LIBRARY"}
                 </Text>
               </View>
-              <View style={styles.heroArrow}>
-                <Feather
-                  name="arrow-up-right"
-                  size={18}
-                  color={design.color.text}
-                />
-              </View>
             </View>
             <View style={styles.heroCopy}>
-              <Text style={styles.heroLocation} numberOfLines={1}>
+              <Text style={styles.heroBody} numberOfLines={1}>
                 {featuredGuide
                   ? rideLocation(featuredGuide)
-                  : "CURATED + COMMUNITY ROUTES"}
+                  : "Curated & community routes"}
               </Text>
-              <Text style={styles.heroTitle} numberOfLines={2}>
-                {featuredGuide?.title ||
-                  (locationState === "available"
-                    ? "No nearby ride guide yet."
-                    : "Find your next line.")}
-              </Text>
-              {featuredGuide ? (
-                <View style={styles.heroMetaRow}>
-                  {rideMeta(featuredGuide).map((item) => (
-                    <View key={item} style={styles.heroMetaPill}>
-                      <Text style={styles.heroMetaText}>{item}</Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <Text style={styles.heroBody}>
-                  {locationState === "available"
-                    ? "Explore the full library to find a ride beyond your 20-mile radius."
-                    : "Browse ride guides and GPX tracks built for the map."}
-                </Text>
-              )}
             </View>
           </Pressable>
 
           <View style={styles.actionsGrid}>
             <ActionCard
-              icon={recording.isRecording ? "navigation" : "circle"}
+              icon={recording.isRecording ? "navigation" : "navigation"}
               title={recording.isRecording ? "Resume ride" : "Start ride"}
               detail={
                 recording.isRecording
                   ? `${formatDistance(recording.liveDistanceMeters, settings.units)} · ${formatDuration(recording.liveDurationMs)}`
-                  : "Track GPS + share live"
+                  : ""
               }
               primary
               onPress={startOrResumeRide}
             />
             <ActionCard
-              icon="share-2"
+              icon="git-merge"
               title="Build route"
-              detail={
-                recording.isRecording
-                  ? "Finish current ride first"
-                  : "Connect roads + trails"
-              }
+              detail=""
               disabled={recording.isRecording}
               onPress={() =>
                 router.push({ pathname: "/map", params: { plot: "1" } })
               }
             />
           </View>
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={() =>
+              regions.length
+                ? router.push("/library")
+                : router.push({
+                    pathname: "/map",
+                    params: { offline: "1" },
+                  })
+            }
+            style={({ pressed }) => [
+              styles.inlineReadinessRow,
+              pressed && styles.rowPressed,
+            ]}
+          >
+            <View style={styles.inlineReadinessLeft}>
+              <View style={[styles.inlineReadinessDot, regions.length ? styles.inlineReadinessDotReady : undefined]} />
+              <Text style={styles.inlineReadinessTitle}>
+                {regions.length ? "Offline map ready" : "Offline map"}
+              </Text>
+              {regions.length > 0 && <Text style={styles.inlineReadinessSubtitle}>· {regions.length} saved</Text>}
+            </View>
+            <Text style={styles.inlineReadinessAction}>
+              {regions.length ? "Manage" : "Save map"}
+            </Text>
+          </Pressable>
 
           {showPrimer ? (
             <View style={styles.primer}>
@@ -659,7 +675,6 @@ export default function HomeScreen() {
           {recentTracks.length ? (
             <View style={styles.section}>
               <ScendersSectionHeading
-                eyebrow="YOUR ACTIVITY"
                 title="Recent rides"
                 actionLabel="View all"
                 onAction={() => router.push("/tracks")}
@@ -685,9 +700,8 @@ export default function HomeScreen() {
           {nearbyGuides.length ? (
             <View style={styles.section}>
               <ScendersSectionHeading
-                eyebrow="KEEP EXPLORING"
                 title={lastLocation ? "More nearby rides" : "More rides"}
-                actionLabel="Explore"
+                actionLabel="View all"
                 onAction={() => router.push("/rides")}
               />
               <View style={styles.routeList}>
@@ -753,176 +767,187 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 760,
   },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  headerButton: {
-    alignItems: "center",
-    backgroundColor: design.color.surface,
-    borderColor: design.color.line,
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 42,
-    justifyContent: "center",
-    width: 42,
-  },
   taglineRow: {
     alignItems: "center",
     flexDirection: "row",
     gap: 9,
-    marginBottom: 18,
-    marginTop: 18,
-  },
-  taglineRule: {
-    backgroundColor: design.color.orange,
-    height: 2,
-    width: 22,
+    marginBottom: 8,
+    marginTop: 24,
   },
   tagline: {
-    color: design.color.textFaint,
+    color: design.color.orangeBright,
     fontFamily: "Inter_700Bold",
-    fontSize: 9,
-    letterSpacing: 1.7,
+    fontSize: 10,
+    letterSpacing: 1.5,
+  },
+  featuredGuideLabel: {
+    marginBottom: 16,
+  },
+  featuredGuideLabelText: {
+    color: design.color.text,
+    fontFamily: "Inter_700Bold",
+    fontSize: 32,
+    letterSpacing: -1.0,
+    lineHeight: 36,
+  },
+  locationHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 16,
+  },
+  locationHeaderText: {
+    color: design.color.textMuted,
+    fontFamily: "Inter_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.0,
+  },
+  homeSearchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: design.color.surfaceRaised,
+    borderRadius: design.radius.medium,
+    borderColor: design.color.line,
+    borderWidth: 1,
+    height: 48,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  homeSearchIcon: {
+    marginRight: 10,
+  },
+  homeSearchInput: {
+    flex: 1,
+    color: design.color.text,
+    fontFamily: "Inter_400Regular",
+    fontSize: 15,
+    height: "100%",
   },
   hero: {
     backgroundColor: design.color.surface,
     borderColor: design.color.line,
-    borderRadius: design.radius.hero,
+    borderRadius: design.radius.medium,
     borderWidth: 1,
-    height: 318,
+    height: 200,
     justifyContent: "space-between",
     overflow: "hidden",
-    padding: 18,
+    padding: 16,
   },
   heroPressed: { opacity: 0.91, transform: [{ scale: 0.995 }] },
   heroEmptyArt: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     backgroundColor: design.color.surface,
     justifyContent: "center",
   },
   heroTopRow: {
-    alignItems: "center",
+    alignItems: "flex-start",
     flexDirection: "row",
     justifyContent: "space-between",
   },
   heroLabel: {
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.58)",
-    borderColor: "rgba(255,255,255,0.14)",
-    borderRadius: design.radius.pill,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 7,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-  },
-  heroLabelDot: {
-    backgroundColor: design.color.orangeBright,
+    backgroundColor: "rgba(0,0,0,0.8)",
     borderRadius: 4,
-    height: 6,
-    width: 6,
+    flexDirection: "row",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
   heroLabelText: {
     color: design.color.text,
     fontFamily: "Inter_700Bold",
-    fontSize: 9,
-    letterSpacing: 1.2,
-  },
-  heroArrow: {
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.52)",
-    borderColor: "rgba(255,255,255,0.14)",
-    borderRadius: 20,
-    borderWidth: 1,
-    height: 38,
-    justifyContent: "center",
-    width: 38,
-  },
-  heroCopy: { gap: 7 },
-  heroLocation: {
-    color: design.color.orangeBright,
-    fontFamily: "Inter_700Bold",
     fontSize: 10,
-    letterSpacing: 1.45,
-    textTransform: "uppercase",
+    letterSpacing: 1.0,
   },
-  heroTitle: {
-    color: design.color.text,
-    fontFamily: "Inter_700Bold",
-    fontSize: 31,
-    letterSpacing: -1.15,
-    lineHeight: 35,
-    maxWidth: 530,
-  },
+  heroCopy: { gap: 4 },
   heroBody: {
-    color: design.color.textMuted,
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  heroMetaRow: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 3 },
-  heroMetaPill: {
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderRadius: design.radius.pill,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-  },
-  heroMetaText: {
     color: design.color.text,
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 10,
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
   },
-  actionsGrid: { flexDirection: "row", gap: 10, marginTop: 10 },
+  actionsGrid: { flexDirection: "row", gap: 12, marginTop: 16 },
   actionCard: {
+    alignItems: "center",
     borderRadius: design.radius.medium,
     borderWidth: 1,
     flex: 1,
-    minHeight: 142,
-    padding: 14,
+    flexDirection: "row",
+    height: 48,
+    justifyContent: "center",
+    paddingHorizontal: 12,
   },
   actionCardPrimary: {
-    backgroundColor: design.color.orange,
-    borderColor: design.color.orange,
+    backgroundColor: design.color.orangeBright,
+    borderColor: design.color.orangeBright,
   },
   actionCardSecondary: {
-    backgroundColor: design.color.surface,
+    backgroundColor: design.color.surfaceRaised,
     borderColor: design.color.line,
   },
-  actionCardPressed: { opacity: 0.82 },
-  disabled: { opacity: 0.42 },
+  actionCardPressed: { opacity: 0.8 },
+  disabled: { opacity: 0.5 },
   actionIcon: {
-    alignItems: "center",
-    borderRadius: 11,
-    height: 36,
-    justifyContent: "center",
-    width: 36,
+    marginRight: 8,
   },
-  actionIconPrimary: { backgroundColor: "rgba(0,0,0,0.14)" },
-  actionIconSecondary: { backgroundColor: design.color.surfaceRaised },
-  actionTopRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
+  actionIconPrimary: {
+    // Empty
   },
-  actionCopy: { flex: 1, justifyContent: "flex-end", paddingTop: 18 },
+  actionIconSecondary: {
+    // Empty
+  },
+  actionTitlePrimary: {
+    color: design.color.canvas,
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+  },
   actionTitle: {
     color: design.color.text,
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+  },
+  actionDetail: { display: "none" },
+  actionDetailPrimary: { display: "none" },
+  actionTopRow: { flexDirection: "row", alignItems: "center" },
+  actionCopy: { marginLeft: 4 },
+  inlineReadinessRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: design.color.lineStrong,
+    marginTop: 8,
+  },
+  inlineReadinessLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  inlineReadinessDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: design.color.lineStrong,
+    marginRight: 8,
+  },
+  inlineReadinessDotReady: {
+    backgroundColor: design.color.success,
+  },
+  inlineReadinessTitle: {
+    color: design.color.text,
     fontFamily: "Inter_700Bold",
-    fontSize: 17,
-    lineHeight: 21,
+    fontSize: 13,
   },
-  actionTitlePrimary: { color: design.color.black },
-  actionDetail: {
-    color: design.color.textMuted,
-    fontFamily: "Inter_500Medium",
-    fontSize: 11,
-    lineHeight: 15,
-    marginTop: 4,
+  inlineReadinessSubtitle: {
+    color: design.color.textFaint,
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    marginLeft: 6,
   },
-  actionDetailPrimary: { color: "rgba(0,0,0,0.66)" },
+  inlineReadinessAction: {
+    color: design.color.orangeBright,
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+  },
   primer: {
     backgroundColor: design.color.surface,
     borderColor: design.color.line,
@@ -995,57 +1020,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   section: { gap: 14, marginTop: 30 },
-  readinessRow: {
-    alignItems: "center",
-    borderBottomColor: design.color.line,
-    borderTopColor: design.color.line,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    gap: 11,
-    marginHorizontal: -18,
-    paddingHorizontal: 18,
-    paddingVertical: 15,
-  },
-  readinessIcon: {
-    alignItems: "center",
-    backgroundColor: design.color.surface,
-    borderRadius: 11,
-    height: 40,
-    justifyContent: "center",
-    width: 40,
-  },
-  readinessCopy: { flex: 1 },
-  readinessTitle: {
-    color: design.color.text,
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
-  },
-  readinessDetail: {
-    color: design.color.textMuted,
-    fontFamily: "Inter_400Regular",
-    fontSize: 10,
-    lineHeight: 15,
-    marginTop: 3,
-  },
-  readinessAction: {
-    color: design.color.orangeBright,
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 11,
-  },
+  readinessRow: { display: "none" },
+  readinessIcon: { display: "none" },
+  readinessCopy: { display: "none" },
+  readinessTitle: { display: "none" },
+  readinessDetail: { display: "none" },
+  readinessAction: { display: "none" },
   routeList: { borderTopColor: design.color.line, borderTopWidth: 1 },
   routeRow: {
     alignItems: "center",
-    borderBottomColor: design.color.line,
-    borderBottomWidth: 1,
+    backgroundColor: design.color.surface,
+    borderColor: design.color.line,
+    borderRadius: design.radius.medium,
+    borderWidth: 1,
     flexDirection: "row",
-    gap: 12,
+    gap: 14,
     minHeight: 68,
+    marginBottom: 8,
+    paddingHorizontal: 12,
     paddingVertical: 10,
   },
   routeGlyph: {
     alignItems: "center",
-    backgroundColor: design.color.surface,
+    backgroundColor: design.color.surfaceRaised,
     borderRadius: 11,
     height: 44,
     justifyContent: "center",
@@ -1067,35 +1064,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   rowPressed: { opacity: 0.58 },
-  utilityStats: {
-    alignItems: "center",
-    borderColor: design.color.line,
-    borderRadius: design.radius.medium,
-    borderWidth: 1,
-    flexDirection: "row",
-    marginTop: 30,
-    paddingVertical: 15,
-  },
-  utilityStat: { alignItems: "center", flex: 1 },
-  utilityNumber: {
-    color: design.color.text,
-    fontFamily: "Inter_700Bold",
-    fontSize: 17,
-  },
-  utilityLabel: {
-    color: design.color.textFaint,
-    fontFamily: "Inter_700Bold",
-    fontSize: 8,
-    letterSpacing: 1.1,
-    marginTop: 4,
-  },
-  utilityDivider: { backgroundColor: design.color.line, height: 28, width: 1 },
-  footerLine: {
-    color: design.color.textFaint,
-    fontFamily: "Inter_700Bold",
-    fontSize: 8,
-    letterSpacing: 1.25,
-    marginTop: 28,
-    textAlign: "center",
-  },
+  utilityStats: { display: "none" },
+  utilityStat: { display: "none" },
+  utilityNumber: { display: "none" },
+  utilityLabel: { display: "none" },
+  utilityDivider: { display: "none" },
+  footerLine: { display: "none" },
 });

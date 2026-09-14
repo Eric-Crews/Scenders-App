@@ -77,7 +77,7 @@ export default function DonateScreen() {
             Keep the ride moving
           </Text>
           <Text style={[styles.heroBody, { color: colors.primaryForeground }]}>
-            Scenders Ride is built on the shoulders of the open-data community.
+            Scenders is built on the shoulders of the open-data community.
             If it&rsquo;s earned a place in your pack, chip in whatever
             it&rsquo;s worth to you — one time, no subscription.
           </Text>

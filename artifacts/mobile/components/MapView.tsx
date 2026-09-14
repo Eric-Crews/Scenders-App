@@ -293,7 +293,7 @@ const MapViewComponent = forwardRef<MapViewHandle, Props>(
           >
             <Feather name="smartphone" size={28} color={colors.primary} />
             <Text style={[styles.fallbackTitle, { color: colors.foreground }]}>
-              Open Scenders Ride on your phone
+              Open Scenders on your phone
             </Text>
             <Text
               style={[styles.fallbackText, { color: colors.mutedForeground }]}

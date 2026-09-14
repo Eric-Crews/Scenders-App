@@ -15,15 +15,15 @@ import { routeProgress, type LatLng } from "./geo";
  * task that re-runs the off-route detection independently of the React tree.
  */
 
-export const BACKGROUND_FOLLOW_TASK = "mapper-one-background-follow";
+export const BACKGROUND_FOLLOW_TASK = "scenders-background-follow";
 
 // Active follow config the background task reads on every location update. It
 // can't see React state, so the screen mirrors the current route/threshold/
 // toggles here whenever they change.
-const KEY_FOLLOW_CONFIG = "fieldmaps.follow.config.v1";
+const KEY_FOLLOW_CONFIG = "scenders.follow.config.v1";
 // Shared off-route latch so the foreground effect and the background task never
 // double-announce the same crossing — whichever runs reads and updates this.
-const KEY_FOLLOW_STATE = "fieldmaps.follow.state.v1";
+const KEY_FOLLOW_STATE = "scenders.follow.state.v1";
 
 // Hysteresis ratio: must come back within this fraction of the chosen off-route
 // threshold before we announce recovery. Prevents repeated buzzing while
@@ -197,7 +197,7 @@ export async function startBackgroundFollow(): Promise<boolean> {
       pausesUpdatesAutomatically: false,
       showsBackgroundLocationIndicator: true,
       foregroundService: {
-        notificationTitle: "Scenders Ride is guiding you",
+        notificationTitle: "Scenders is guiding you",
         notificationBody: "Off-route alerts stay on with your screen locked.",
         notificationColor: "#2f6b46",
       },

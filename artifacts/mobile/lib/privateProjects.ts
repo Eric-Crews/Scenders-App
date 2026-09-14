@@ -9,13 +9,16 @@ import {
   type PrivateProject as ApiPrivateProject,
   type PrivateProjectContent as ApiPrivateProjectContent,
   type SharedTrack,
-} from "@workspace/api-client-react";
+} from "@/lib/api-client";
 
 export type PrivateProject = ApiPrivateProject;
 export type PrivateProjectContent = ApiPrivateProjectContent;
 
 export async function startPrivateProjectCheckout(trackId: string) {
-  return createPrivateProjectCheckout(trackId, {});
+  // The mobile API intentionally uses the tenant-safe beta/direct flow. Stripe
+  // checkout is a web-only storefront concern and must not create cross-tenant
+  // records or sessions.
+  return createBetaPrivateProject(trackId);
 }
 
 export async function startBetaPrivateProject(trackId: string) {

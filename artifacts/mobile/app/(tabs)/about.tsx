@@ -184,7 +184,7 @@ export default function AboutScreen() {
           <View style={styles.accountHeader}>
             <Feather name="heart" size={18} color={colors.primary} />
             <Text style={[styles.accountTitle, { color: colors.foreground }]}>
-              Keep Scenders Ride moving
+              Keep Scenders moving
             </Text>
           </View>
           <Text style={[styles.accountBody, { color: colors.mutedForeground }]}>
@@ -428,13 +428,13 @@ export default function AboutScreen() {
             icon="shield"
             label="Account deletion information"
             sub="Review what is deleted and request account removal"
-            href="https://mapper.one/delete-account"
+            href="https://scenders.com/delete-account"
           />
           <LinkRow
             icon="database"
             label="Delete selected data"
             sub="Remove cloud data without deleting your account"
-            href="https://mapper.one/delete-data"
+            href="https://scenders.com/delete-data"
           />
         </View>
 
@@ -498,7 +498,7 @@ export default function AboutScreen() {
           </Text>
           <Text style={[styles.heroBody, { color: colors.primaryForeground }]}>
             Every trail we follow was first cut by someone else. Every map we
-            read was first drawn by hand. Scenders Ride exists because of the
+            read was first drawn by hand. Scenders exists because of the
             riders, trail builders, cartographers, and open-data communities who
             came before — and we&rsquo;re grateful for all of them.
           </Text>
@@ -518,7 +518,7 @@ export default function AboutScreen() {
           </Text>
           <Text style={[styles.creditBody, { color: colors.mutedForeground }]}>
             We&rsquo;re riders and explorers of wild places — singletrack,
-            gravel, alpine ridges, and quiet roads. We made Scenders Ride to put
+            gravel, alpine ridges, and quiet roads. We made Scenders to put
             practical route tools in the hands of people who actually go out
             there.
           </Text>
@@ -665,7 +665,7 @@ export default function AboutScreen() {
         </View>
 
         <Text style={[styles.footer, { color: colors.mutedForeground }]}>
-          Scenders Ride · Find the line worth riding.{"\n"}
+          Scenders · Find the line worth riding.{"\n"}
           Part of The Adventure Collective.
         </Text>
       </KeyboardAwareScrollViewCompat>

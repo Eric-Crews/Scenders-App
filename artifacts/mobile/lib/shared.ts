@@ -3,11 +3,10 @@ import {
   fetchPrivateProjectRoute,
   type PrivateProjectContent,
 } from "./privateProjects";
+import { mobileApiBase } from "./api-base";
 
 function apiBase(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (domain) return `https://${domain}/api`;
-  return "/api";
+  return mobileApiBase();
 }
 
 export type SharedTrack = {

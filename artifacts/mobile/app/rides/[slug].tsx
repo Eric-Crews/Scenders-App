@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ScendersMoreButton } from "@/components/ScendersChrome";
 import { RideRoutePreview } from "@/components/RideRoutePreview";
 import { useMaps } from "@/contexts/MapsContext";
 import { useColors } from "@/hooks/useColors";
@@ -135,45 +136,70 @@ export default function RideDetailScreen() {
     });
   };
 
+  const TopBar = () => (
+    <View style={[styles.topBar, { marginTop: insets.top + 10, marginBottom: 16, marginHorizontal: 18 }]}>
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={10}
+        style={[
+          styles.iconButton,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
+        <Feather name="arrow-left" size={20} color={colors.foreground} />
+      </Pressable>
+      <Text style={[styles.wordmark, { color: colors.primary }]}>
+        SCENDERS
+      </Text>
+      <ScendersMoreButton />
+    </View>
+  );
+
   if (loading) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-        <Text style={[styles.stateText, { color: colors.mutedForeground }]}>
-          Loading ride…
-        </Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <TopBar />
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.primary} />
+          <Text style={[styles.stateText, { color: colors.mutedForeground }]}>
+            Loading ride…
+          </Text>
+        </View>
       </View>
     );
   }
 
   if (error || !guide) {
     return (
-      <View
-        style={[
-          styles.center,
-          { backgroundColor: colors.background, paddingHorizontal: 24 },
-        ]}
-      >
-        <Feather name="map" size={28} color={colors.primary} />
-        <Text style={[styles.stateTitle, { color: colors.foreground }]}>
-          Ride unavailable
-        </Text>
-        <Text style={[styles.stateText, { color: colors.mutedForeground }]}>
-          {error || "We couldn’t find this ride."}
-        </Text>
-        <Pressable
-          onPress={() => void load()}
-          style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <TopBar />
+        <View
+          style={[
+            styles.center,
+            { paddingHorizontal: 24 },
+          ]}
         >
-          <Text
-            style={[
-              styles.primaryButtonText,
-              { color: colors.primaryForeground },
-            ]}
-          >
-            Try again
+          <Feather name="map" size={28} color={colors.primary} />
+          <Text style={[styles.stateTitle, { color: colors.foreground }]}>
+            Ride unavailable
           </Text>
-        </Pressable>
+          <Text style={[styles.stateText, { color: colors.mutedForeground }]}>
+            {error || "We couldn’t find this ride."}
+          </Text>
+          <Pressable
+            onPress={() => void load()}
+            style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+          >
+            <Text
+              style={[
+                styles.primaryButtonText,
+                { color: colors.primaryForeground },
+              ]}
+            >
+              Try again
+            </Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -218,30 +244,13 @@ export default function RideDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <TopBar />
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + 10,
           paddingBottom: insets.bottom + 48,
           paddingHorizontal: 18,
         }}
       >
-        <View style={styles.topBar}>
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={10}
-            style={[
-              styles.iconButton,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-          >
-            <Feather name="arrow-left" size={20} color={colors.foreground} />
-          </Pressable>
-          <Text style={[styles.wordmark, { color: colors.primary }]}>
-            SCENDERS
-          </Text>
-          <View style={{ width: 44 }} />
-        </View>
-
         {imageUrl && !heroImageFailed ? (
           <View
             style={[
@@ -699,7 +708,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
   },
-  heroImage: { ...StyleSheet.absoluteFillObject },
+  heroImage: { ...StyleSheet.absoluteFill },
   heroMediaLabel: {
     backgroundColor: "rgba(0,0,0,0.66)",
     borderColor: "rgba(255,255,255,0.18)",

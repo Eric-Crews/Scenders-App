@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
 
-const CLIENT_ID_KEY = "mapper.one/feedback-client-id";
-const DISPLAY_NAME_KEY = "mapper.one/feedback-display-name";
+const CLIENT_ID_KEY = "scenders/feedback-client-id";
+const DISPLAY_NAME_KEY = "scenders/feedback-display-name";
 
 // A stable per-device anonymous id used to dedupe upvotes without any login.
 export async function getClientId(): Promise<string> {

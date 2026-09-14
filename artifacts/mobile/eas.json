@@ -1,30 +1,22 @@
 {
   "cli": {
-    "version": ">= 14.7.1",
-    "appVersionSource": "local"
+    "version": ">= 24.3.0"
   },
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "android": {
-        "image": "latest",
-        "buildType": "apk"
-      }
-    },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "scenders.com",
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "arm64-v8a"
+      },
       "android": {
-        "image": "latest",
         "buildType": "apk"
       }
     },
     "production": {
-      "distribution": "store",
-      "autoIncrement": false,
-      "android": {
-        "image": "latest",
-        "buildType": "app-bundle"
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "scenders.com"
       }
     }
   }

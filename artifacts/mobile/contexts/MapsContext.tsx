@@ -10,6 +10,7 @@ import React, {
 } from "react";
 
 import { useAuth } from "@/lib/auth";
+import { datasetRouteCoords } from "@/lib/datasetRoute";
 import {
   DATASET_COLORS,
   ROAD_COLORS,
@@ -20,6 +21,10 @@ import {
   type Waypoint,
   genId,
 } from "@/lib/types";
+
+function isUsableSavedDataset(dataset: Dataset): boolean {
+  return !dataset.communityId || datasetRouteCoords(dataset.geojson).length >= 2;
+}
 import {
   DEFAULT_BASE_LAYER,
   DEFAULT_OVERLAYS,
@@ -32,14 +37,14 @@ import { removePhoto } from "@/lib/photos";
 import * as sync from "@/lib/sync";
 import { OFF_ROUTE_THRESHOLD_VALUES, type UnitSystem } from "@/lib/units";
 
-const KEY_DATASETS = "fieldmaps.datasets.v1";
-const KEY_WAYPOINTS = "fieldmaps.waypoints.v1";
-const KEY_REGIONS = "fieldmaps.regions.v1";
-const KEY_TRACKS = "fieldmaps.tracks.v1";
-const KEY_ACTIVE = "fieldmaps.active.v1";
-const KEY_LAYERS = "fieldmaps.layers.v1";
-const KEY_SETTINGS = "fieldmaps.settings.v1";
-const KEY_MIGRATED_PREFIX = "fieldmaps.migrated.v1.";
+const KEY_DATASETS = "scenders.datasets.v1";
+const KEY_WAYPOINTS = "scenders.waypoints.v1";
+const KEY_REGIONS = "scenders.regions.v1";
+const KEY_TRACKS = "scenders.tracks.v1";
+const KEY_ACTIVE = "scenders.active.v1";
+const KEY_LAYERS = "scenders.layers.v1";
+const KEY_SETTINGS = "scenders.settings.v1";
+const KEY_MIGRATED_PREFIX = "scenders.migrated.v1.";
 
 type ActiveState = {
   datasetIds: string[];
@@ -228,7 +233,10 @@ export function MapsProvider({ children }: { children: React.ReactNode }) {
           AsyncStorage.getItem(KEY_LAYERS),
           AsyncStorage.getItem(KEY_SETTINGS),
         ]);
-        if (d) setDatasets(JSON.parse(d));
+        if (d) {
+          const parsedDatasets = JSON.parse(d) as Dataset[];
+          setDatasets(parsedDatasets.filter(isUsableSavedDataset));
+        }
         if (w) setWaypoints(JSON.parse(w));
         if (r) setRegions(JSON.parse(r));
         if (tr) setTracks(JSON.parse(tr));
@@ -357,7 +365,11 @@ export function MapsProvider({ children }: { children: React.ReactNode }) {
         setWaypoints(
           mergeWithDirty(cloudWaypointsWithLocalFields, dirtyWaypoints.current),
         );
-        setDatasets(mergeWithDirty(cloudDatasets, dirtyDatasets.current));
+        setDatasets(
+          mergeWithDirty(cloudDatasets, dirtyDatasets.current).filter(
+            isUsableSavedDataset,
+          ),
+        );
         setRegions(mergeWithDirty(cloudRegions, dirtyRegions.current));
         setTracks(mergeWithDirty(cloudTracks, dirtyTracks.current));
         setSyncStatus("idle");

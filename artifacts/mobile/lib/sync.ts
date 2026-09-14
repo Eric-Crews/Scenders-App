@@ -8,6 +8,7 @@ import type {
   TrackSummary,
   Waypoint,
 } from "./types";
+import { mobileApiBase } from "./api-base";
 
 const AUTH_TOKEN_KEY = "auth_session_token";
 
@@ -22,9 +23,7 @@ export class ApiRequestError extends Error {
 }
 
 function apiBase(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (domain) return `https://${domain}/api`;
-  return "/api";
+  return mobileApiBase();
 }
 
 async function authHeaders(): Promise<Record<string, string>> {
@@ -144,6 +143,7 @@ export async function deleteWaypoint(id: string): Promise<void> {
 }
 
 export async function requestPrivateProjectPhotoUpload(input: {
+  projectId?: string;
   name: string;
   size: number;
   contentType: string;

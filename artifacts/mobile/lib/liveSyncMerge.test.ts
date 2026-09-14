@@ -12,7 +12,7 @@ import type { LiveSession } from "./liveSharing";
 const session = (id: string, overrides: Partial<LiveSession> = {}): LiveSession => ({
   id,
   token: "token",
-  url: "https://mapper.one/live/token",
+      url: "https://scenders.com/live/token",
   name: "Test",
   ownerDisplayName: "Taylor",
   followedRoute: null,
@@ -75,7 +75,7 @@ test("does not write either live capability to ordinary session storage", () => 
   const persisted = toPersistedLiveSession(
     session("one", {
       token: "viewer-capability",
-      url: "https://mapper.one/live/viewer-capability",
+      url: "https://scenders.com/live/viewer-capability",
       ownerCapability: "owner-capability",
     }),
   );

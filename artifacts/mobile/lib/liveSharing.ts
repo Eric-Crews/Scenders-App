@@ -11,8 +11,8 @@ import type { LiveFollowedRoute } from "./liveRouteSnapshot";
 export type { LiveFollowedRoute } from "./liveRouteSnapshot";
 export { mergeLiveSyncResult } from "./liveSyncMerge";
 
-const SESSION_KEY = "fieldmaps.live-sharing.v1";
-const OWNER_CAPABILITY_KEY = "fieldmaps.live-sharing.owner-capability.v1";
+const SESSION_KEY = "scenders.live-sharing.v1";
+const OWNER_CAPABILITY_KEY = "scenders.live-sharing.owner-capability.v1";
 
 const ownerCapabilityStore = {
   get: () =>
@@ -225,7 +225,7 @@ export async function createLiveSession(input: {
 }): Promise<LiveSession> {
   if (Platform.OS === "web") {
     throw new Error(
-      "Live sharing is available in the Scenders Ride mobile app.",
+      "Live sharing is available in the Scenders mobile app.",
     );
   }
   const remote = await anonymousFetch<RemoteActivity>("/live-activities", {

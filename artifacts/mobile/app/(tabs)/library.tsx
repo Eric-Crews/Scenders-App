@@ -26,6 +26,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ScendersMoreButton } from "@/components/ScendersChrome";
 import { useMaps } from "@/contexts/MapsContext";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -153,6 +154,9 @@ export default function LibraryScreen() {
   const [communityLoading, setCommunityLoading] = useState(false);
   const [communityError, setCommunityError] = useState<string | null>(null);
   const [communityLoadedOnce, setCommunityLoadedOnce] = useState(false);
+  const [communityTotal, setCommunityTotal] = useState(0);
+  const [communityHasMore, setCommunityHasMore] = useState(false);
+  const [communityLoadingMore, setCommunityLoadingMore] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{
     id: string;
@@ -166,6 +170,9 @@ export default function LibraryScreen() {
   );
   // Monotonic token so a slow earlier request can't overwrite a newer result.
   const communityReqSeq = useRef(0);
+  const communityPage = useRef(1);
+  const communityHasMoreRef = useRef(false);
+  const communityLoadingRef = useRef(false);
   // Same idea for region drilldowns: switching regions quickly must not let a
   // stale fetch repopulate the list for the wrong region.
   const regionReqSeq = useRef(0);
@@ -200,6 +207,12 @@ export default function LibraryScreen() {
   const [regionDatasetsError, setRegionDatasetsError] = useState<string | null>(
     null,
   );
+  const [regionDatasetsHasMore, setRegionDatasetsHasMore] = useState(false);
+  const [regionDatasetsLoadingMore, setRegionDatasetsLoadingMore] =
+    useState(false);
+  const regionDatasetPage = useRef(1);
+  const regionDatasetsHasMoreRef = useRef(false);
+  const regionDatasetsLoadingRef = useRef(false);
   // Bulk "Download all" progress for the selected region.
   const [bulkProgress, setBulkProgress] = useState<{
     done: number;
@@ -216,30 +229,78 @@ export default function LibraryScreen() {
     return () => clearTimeout(t);
   }, [communitySearch]);
 
-  // Fetch only the nearest 50 datasets (or newest 50 when location is unknown),
-  // letting the server do the distance ranking and text search instead of
-  // pulling the entire community library to the device.
-  const loadCommunity = useCallback(async () => {
-    const seq = ++communityReqSeq.current;
-    setCommunityLoading(true);
-    setCommunityError(null);
-    try {
-      const list = await listCommunityDatasets({
-        lat: sortOrigin?.lat,
-        lng: sortOrigin?.lng,
-        q: debouncedSearch || undefined,
-        limit: 50,
-      });
-      if (seq !== communityReqSeq.current) return; // a newer request superseded us
-      setCommunity(list);
-      setCommunityLoadedOnce(true);
-    } catch (err) {
-      if (seq !== communityReqSeq.current) return;
-      setCommunityError(err instanceof Error ? err.message : String(err));
-    } finally {
-      if (seq === communityReqSeq.current) setCommunityLoading(false);
-    }
-  }, [sortOrigin, debouncedSearch]);
+  // Fetch the catalog in pages, letting the server do the distance ranking and
+  // text search instead of pulling the entire community library to the device.
+  const loadCommunity = useCallback(
+    async (page = 1, reset = true) => {
+      if (
+        !reset &&
+        (communityLoadingRef.current || !communityHasMoreRef.current)
+      )
+        return;
+      const seq = reset ? ++communityReqSeq.current : communityReqSeq.current;
+      communityLoadingRef.current = true;
+      setCommunityError(null);
+      if (reset) {
+        setCommunity([]);
+        setCommunityTotal(0);
+        setCommunityHasMore(false);
+        communityHasMoreRef.current = false;
+        communityPage.current = 1;
+        setCommunityLoadingMore(false);
+        setCommunityLoading(true);
+      } else {
+        setCommunityLoadingMore(true);
+      }
+      try {
+        const response = await listCommunityDatasets({
+          lat: sortOrigin?.lat,
+          lng: sortOrigin?.lng,
+          q: debouncedSearch || undefined,
+          page,
+          pageSize: 30,
+        });
+        if (seq !== communityReqSeq.current) return;
+        setCommunity((previous) => {
+          if (reset) {
+            const seen = new Set<string>();
+            return response.items.filter((dataset) => {
+              if (seen.has(dataset.id)) return false;
+              seen.add(dataset.id);
+              return true;
+            });
+          }
+          const seen = new Set(previous.map((dataset) => dataset.id));
+          const newItems = response.items.filter((dataset) => {
+            if (seen.has(dataset.id)) return false;
+            seen.add(dataset.id);
+            return true;
+          });
+          return [...previous, ...newItems];
+        });
+        communityPage.current = response.page;
+        communityHasMoreRef.current = response.hasMore;
+        setCommunityHasMore(response.hasMore);
+        setCommunityTotal(response.total);
+        setCommunityLoadedOnce(true);
+      } catch (err) {
+        if (seq !== communityReqSeq.current) return;
+        setCommunityError(err instanceof Error ? err.message : String(err));
+      } finally {
+        if (seq === communityReqSeq.current) {
+          communityLoadingRef.current = false;
+          setCommunityLoading(false);
+          setCommunityLoadingMore(false);
+        }
+      }
+    },
+    [sortOrigin, debouncedSearch],
+  );
+
+  const loadMoreCommunity = useCallback(() => {
+    if (communityLoadingRef.current || !communityHasMoreRef.current) return;
+    void loadCommunity(communityPage.current + 1, false);
+  }, [loadCommunity]);
 
   useFocusEffect(
     useCallback(() => {
@@ -268,34 +329,92 @@ export default function LibraryScreen() {
     }
   }, [browseMode, regionsLoadedOnce, regionsLoading, loadRegions]);
 
-  // Drill into a region: fetch every dataset tagged with it (cap is raised
-  // server-side when a region filter is present).
+  // Drill into a region and page through the datasets tagged with it.
   const openRegion = useCallback(async (region: CommunityRegionSummary) => {
     const seq = ++regionReqSeq.current;
     setSelectedRegion(region);
     setRegionDatasets([]);
     setRegionDatasetsError(null);
+    setRegionDatasetsHasMore(false);
+    regionDatasetsHasMoreRef.current = false;
+    regionDatasetPage.current = 1;
+    setRegionDatasetsLoadingMore(false);
     setRegionDatasetsLoading(true);
+    regionDatasetsLoadingRef.current = true;
     try {
-      const list = await listCommunityDatasets({
+      const response = await listCommunityDatasets({
         region: region.region,
-        limit: 5000,
+        page: 1,
+        pageSize: 30,
       });
       if (seq !== regionReqSeq.current) return; // a newer region superseded us
-      setRegionDatasets(list);
+      setRegionDatasets(response.items);
+      regionDatasetPage.current = response.page;
+      regionDatasetsHasMoreRef.current = response.hasMore;
+      setRegionDatasetsHasMore(response.hasMore);
     } catch (err) {
       if (seq !== regionReqSeq.current) return;
       setRegionDatasetsError(err instanceof Error ? err.message : String(err));
     } finally {
-      if (seq === regionReqSeq.current) setRegionDatasetsLoading(false);
+      if (seq === regionReqSeq.current) {
+        regionDatasetsLoadingRef.current = false;
+        setRegionDatasetsLoading(false);
+      }
     }
   }, []);
+
+  const loadMoreRegion = useCallback(async () => {
+    if (
+      !selectedRegion ||
+      regionDatasetsLoadingRef.current ||
+      !regionDatasetsHasMoreRef.current
+    )
+      return;
+    const seq = regionReqSeq.current;
+    regionDatasetsLoadingRef.current = true;
+    setRegionDatasetsLoadingMore(true);
+    try {
+      const response = await listCommunityDatasets({
+        region: selectedRegion.region,
+        page: regionDatasetPage.current + 1,
+        pageSize: 30,
+      });
+      if (seq !== regionReqSeq.current) return;
+      setRegionDatasets((previous) => {
+        const seen = new Set(previous.map((dataset) => dataset.id));
+        const newItems = response.items.filter((dataset) => {
+          if (seen.has(dataset.id)) return false;
+          seen.add(dataset.id);
+          return true;
+        });
+        return [...previous, ...newItems];
+      });
+      regionDatasetPage.current = response.page;
+      regionDatasetsHasMoreRef.current = response.hasMore;
+      setRegionDatasetsHasMore(response.hasMore);
+    } catch (err) {
+      if (seq === regionReqSeq.current) {
+        setRegionDatasetsError(err instanceof Error ? err.message : String(err));
+      }
+    } finally {
+      if (seq === regionReqSeq.current) {
+        regionDatasetsLoadingRef.current = false;
+        setRegionDatasetsLoadingMore(false);
+      }
+    }
+  }, [selectedRegion]);
 
   const closeRegion = useCallback(() => {
     regionReqSeq.current++; // cancel any in-flight drilldown fetch
     setSelectedRegion(null);
     setRegionDatasets([]);
     setRegionDatasetsError(null);
+    setRegionDatasetsHasMore(false);
+    regionDatasetsHasMoreRef.current = false;
+    regionDatasetPage.current = 1;
+    regionDatasetsLoadingRef.current = false;
+    setRegionDatasetsLoading(false);
+    setRegionDatasetsLoadingMore(false);
   }, []);
 
   // Reset USGS import state when the user navigates to a different region.
@@ -595,65 +714,126 @@ export default function LibraryScreen() {
   // network bounded; already-downloaded routes (matched by communityId) are
   // skipped so re-running is cheap.
   const downloadAllInRegion = async () => {
-    if (bulkProgress) return;
-    const have = new Set<string>();
-    for (const d of datasets) if (d.communityId) have.add(d.communityId);
-    const pending = regionDatasets.filter((c) => !have.has(c.id));
-    if (pending.length === 0) {
-      Alert.alert(
-        "Already downloaded",
-        "Every route in this region is already in your library.",
-      );
-      return;
-    }
-
-    setBulkProgress({ done: 0, total: pending.length });
+    const region = selectedRegion;
+    if (bulkProgress || !region) return;
+    const requestSeq = regionReqSeq.current;
+    let cancelled = false;
     let failed = 0;
-    for (let i = 0; i < pending.length; i++) {
-      const item = pending[i];
-      try {
-        const detail = await getCommunityDataset(item.id);
-        const bounds: [number, number, number, number] | undefined =
-          detail.boundsWest != null &&
-          detail.boundsSouth != null &&
-          detail.boundsEast != null &&
-          detail.boundsNorth != null
-            ? [
-                detail.boundsWest,
-                detail.boundsSouth,
-                detail.boundsEast,
-                detail.boundsNorth,
-              ]
-            : undefined;
-        addDataset(detail.name, detail.format, detail.geojson, bounds, {
-          communityId: detail.id,
-          communityKind:
-            detail.kind === "trail" || detail.kind === "road"
-              ? detail.kind
-              : undefined,
+    try {
+      // A page size of 50 is the server maximum. Start at page one even when
+      // the region browser has loaded 30-item pages: changing pageSize midway
+      // would otherwise skip the rows between those differently-sized pages.
+      const all = new Map<string, CommunityDatasetSummary>();
+      let page = 1;
+      let hasMore = true;
+      setBulkProgress({ done: 0, total: 1 });
+      while (hasMore) {
+        const response = await listCommunityDatasets({
+          region: region.region,
+          page,
+          pageSize: 50,
         });
-      } catch {
-        failed++;
+        if (requestSeq !== regionReqSeq.current) {
+          cancelled = true;
+          return;
+        }
+        for (const item of response.items) all.set(item.id, item);
+        hasMore = response.hasMore;
+        page = response.page + 1;
       }
-      setBulkProgress({ done: i + 1, total: pending.length });
-    }
+      if (requestSeq !== regionReqSeq.current) {
+        cancelled = true;
+        return;
+      }
+      const allRegionDatasets = [...all.values()];
+      setRegionDatasets(allRegionDatasets);
+      regionDatasetPage.current = Math.max(1, page - 1);
+      regionDatasetsHasMoreRef.current = false;
+      setRegionDatasetsHasMore(false);
 
-    setBulkProgress(null);
-    if (Platform.OS !== "web") {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {},
+      const have = new Set<string>();
+      for (const d of datasetsRef.current) {
+        if (d.communityId) have.add(d.communityId);
+      }
+      const pending = allRegionDatasets.filter((item) => !have.has(item.id));
+      if (pending.length === 0) {
+        Alert.alert(
+          "Already downloaded",
+          "Every route in this region is already in your library.",
+        );
+        return;
+      }
+
+      setBulkProgress({ done: 0, total: pending.length });
+      for (let i = 0; i < pending.length; i++) {
+        if (requestSeq !== regionReqSeq.current) {
+          cancelled = true;
+          return;
+        }
+        const item = pending[i];
+        try {
+          const detail = await getCommunityDataset(item.id);
+          if (requestSeq !== regionReqSeq.current) {
+            cancelled = true;
+            return;
+          }
+          const bounds: [number, number, number, number] | undefined =
+            detail.boundsWest != null &&
+            detail.boundsSouth != null &&
+            detail.boundsEast != null &&
+            detail.boundsNorth != null
+              ? [
+                  detail.boundsWest,
+                  detail.boundsSouth,
+                  detail.boundsEast,
+                  detail.boundsNorth,
+                ]
+              : undefined;
+          addDataset(detail.name, detail.format, detail.geojson, bounds, {
+            communityId: detail.id,
+            communityKind:
+              detail.kind === "trail" || detail.kind === "road"
+                ? detail.kind
+                : undefined,
+          });
+          // Keep the local snapshot current while React state catches up.
+          have.add(item.id);
+        } catch {
+          if (requestSeq !== regionReqSeq.current) {
+            cancelled = true;
+            return;
+          }
+          failed++;
+        }
+        setBulkProgress({ done: i + 1, total: pending.length });
+      }
+
+      if (cancelled) return;
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => {});
+      }
+      const imported = pending.length - failed;
+      Alert.alert(
+        "Region downloaded",
+        `Imported ${imported} route${imported === 1 ? "" : "s"}${
+          failed ? ` · ${failed} failed` : ""
+        }.`,
       );
+      // Refresh download counts and region totals.
+      loadCommunity();
+      loadRegions();
+    } catch (err) {
+      if (!cancelled && requestSeq === regionReqSeq.current) {
+        Alert.alert(
+          "Region download failed",
+          err instanceof Error ? err.message : String(err),
+        );
+      }
+    } finally {
+      setBulkProgress(null);
     }
-    const imported = pending.length - failed;
-    Alert.alert(
-      "Region downloaded",
-      `Imported ${imported} route${imported === 1 ? "" : "s"}${
-        failed ? ` · ${failed} failed` : ""
-      }.`,
-    );
-    // Refresh download counts and region totals.
-    loadCommunity();
-    loadRegions();
   };
 
   // Open an already-downloaded community dataset on the map (focuses the route
@@ -1005,24 +1185,27 @@ export default function LibraryScreen() {
           </Text>
           <Text style={[styles.h1, { color: colors.foreground }]}>Saved</Text>
         </View>
-        <Pressable
-          onPress={handleImport}
-          disabled={importing}
-          style={({ pressed }) => [
-            styles.importBtn,
-            {
-              backgroundColor: colors.primary,
-              opacity: importing ? 0.6 : pressed ? 0.85 : 1,
-            },
-          ]}
-        >
-          <Feather name="upload" size={16} color={colors.primaryForeground} />
-          <Text
-            style={[styles.importText, { color: colors.primaryForeground }]}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <Pressable
+            onPress={handleImport}
+            disabled={importing}
+            style={({ pressed }) => [
+              styles.importBtn,
+              {
+                backgroundColor: colors.primary,
+                opacity: importing ? 0.6 : pressed ? 0.85 : 1,
+              },
+            ]}
           >
-            {importing ? "Importing…" : "Import"}
-          </Text>
-        </Pressable>
+            <Feather name="upload" size={16} color={colors.primaryForeground} />
+            <Text
+              style={[styles.importText, { color: colors.primaryForeground }]}
+            >
+              {importing ? "Importing…" : "Import"}
+            </Text>
+          </Pressable>
+          <ScendersMoreButton />
+        </View>
       </View>
 
       <FlatList
@@ -1483,11 +1666,45 @@ export default function LibraryScreen() {
                         Couldn’t load this region’s routes.
                       </Text>
                     </View>
-                  ) : (
-                    regionDatasets.map((c) =>
-                      renderCommunityCard(c, Number.POSITIVE_INFINITY),
-                    )
-                  )}
+                   ) : (
+                     <>
+                       {regionDatasets.map((c) =>
+                         renderCommunityCard(c, Number.POSITIVE_INFINITY),
+                       )}
+                       {regionDatasetsLoadingMore ? (
+                         <View style={styles.communityLoadMoreState}>
+                           <ActivityIndicator color={colors.primary} />
+                           <Text
+                             style={[
+                               styles.cardMeta,
+                               { color: colors.mutedForeground },
+                             ]}
+                           >
+                             Loading more routes…
+                           </Text>
+                         </View>
+                       ) : regionDatasetsHasMore ? (
+                         <Pressable
+                           accessibilityRole="button"
+                           accessibilityLabel="Load more routes in this region"
+                           onPress={() => void loadMoreRegion()}
+                           style={[
+                             styles.communityLoadMoreButton,
+                             { borderColor: colors.border },
+                           ]}
+                         >
+                           <Text
+                             style={[
+                               styles.importText,
+                               { color: colors.primary },
+                             ]}
+                           >
+                             Load more routes
+                           </Text>
+                         </Pressable>
+                       ) : null}
+                     </>
+                   )}
                 </>
               ) : regionsLoading ? (
                 <View
@@ -1685,9 +1902,49 @@ export default function LibraryScreen() {
                 </Text>
               </View>
             ) : (
-              displayedCommunity.map(({ c, dist }) =>
-                renderCommunityCard(c, dist),
-              )
+              <>
+                <Text
+                  style={[
+                    styles.cardMeta,
+                    { color: colors.mutedForeground, marginTop: 2 },
+                  ]}
+                >
+                  {communityTotal}{" "}
+                  {communityTotal === 1 ? "map" : "maps"}
+                </Text>
+                {displayedCommunity.map(({ c, dist }) =>
+                  renderCommunityCard(c, dist),
+                )}
+                {communityLoadingMore ? (
+                  <View style={styles.communityLoadMoreState}>
+                    <ActivityIndicator color={colors.primary} />
+                    <Text
+                      style={[
+                        styles.cardMeta,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
+                      Loading more maps…
+                    </Text>
+                  </View>
+                ) : communityHasMore ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Load more community maps"
+                    onPress={loadMoreCommunity}
+                    style={[
+                      styles.communityLoadMoreButton,
+                      { borderColor: colors.border },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.importText, { color: colors.primary }]}
+                    >
+                      Load more maps
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </>
             )}
 
             <Text
@@ -1824,7 +2081,7 @@ export default function LibraryScreen() {
                 <Text
                   style={[styles.cardMeta, { color: colors.mutedForeground }]}
                 >
-                  Other Scenders Ride users can browse and download this map.
+                  Other Scenders users can browse and download this map.
                 </Text>
               </View>
               <Switch
@@ -2214,6 +2471,22 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   locBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  communityLoadMoreState: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    paddingVertical: 12,
+  },
+  communityLoadMoreButton: {
+    alignItems: "center",
+    alignSelf: "center",
+    borderRadius: 999,
+    borderWidth: 1,
+    marginVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+  },
   shareRow: {
     flexDirection: "row",
     alignItems: "center",

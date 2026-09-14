@@ -1,8 +1,15 @@
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useMemo, useState } from "react";
+import * as Location from "expo-location";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import React, {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+} from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -12,16 +19,17 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useColors } from "@/hooks/useColors";
+import { ScendersHeader } from "@/components/ScendersChrome";
+import { scendersDesign as design } from "@/constants/scendersDesign";
+import { geocodeDestination } from "@/lib/geocoding";
 import {
-  filterRideGuides,
   listRideGuides,
   type RideGuide,
-  type RideGuideFilters,
 } from "@/lib/rideForest";
 
 const WEB_TOP_INSET = Platform.OS === "web" ? 67 : 0;
@@ -34,8 +42,21 @@ function miles(value: number | null): string | null {
   return `${Number.isInteger(value) ? value : value.toFixed(1)} mi`;
 }
 
-function RideCard({ item, onPress }: { item: RideGuide; onPress: () => void }) {
-  const colors = useColors();
+type ActiveLocation = {
+  lat: number;
+  lng: number;
+  label: string;
+};
+
+function RideCard({
+  item,
+  distance,
+  onPress,
+}: {
+  item: RideGuide;
+  distance: number | null;
+  onPress: () => void;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
   const imageUrl = item.featuredImage || item.thumbnailUrl;
 
@@ -44,18 +65,9 @@ function RideCard({ item, onPress }: { item: RideGuide; onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel={`Open ride guide for ${item.title}`}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        {
-          backgroundColor: colors.card,
-          borderColor: colors.border,
-          opacity: pressed ? 0.88 : 1,
-        },
-      ]}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
-      <View
-        style={[styles.cardMedia, { backgroundColor: colors.routeBackground }]}
-      >
+      <View style={styles.cardMedia}>
         {imageUrl && !imageFailed ? (
           <Image
             source={{ uri: imageUrl }}
@@ -66,15 +78,11 @@ function RideCard({ item, onPress }: { item: RideGuide; onPress: () => void }) {
           />
         ) : (
           <View style={styles.imageFallback}>
-            <Feather name="book-open" size={28} color={colors.primary} />
-            <Text
-              style={[
-                styles.imageFallbackText,
-                { color: colors.routeForeground },
-              ]}
-            >
-              Full ride guide
-            </Text>
+            <Feather
+              name="book-open"
+              size={28}
+              color={design.color.lineStrong}
+            />
           </View>
         )}
         {imageUrl && !imageFailed ? (
@@ -90,37 +98,45 @@ function RideCard({ item, onPress }: { item: RideGuide; onPress: () => void }) {
         </View>
       </View>
       <View style={styles.cardBody}>
-        <Text style={[styles.location, { color: colors.primary }]}>
-          {[item.city, item.state].filter(Boolean).join(", ") ||
-            item.location ||
-            "Scenders ride guide"}
-        </Text>
-        <Text
-          style={[styles.cardTitle, { color: colors.foreground }]}
-          numberOfLines={2}
-        >
+        <View style={styles.cardHeaderRow}>
+          <Text style={styles.location} numberOfLines={1}>
+            {[item.city, item.state].filter(Boolean).join(", ") ||
+              item.location ||
+              "Scenders ride guide"}
+          </Text>
+          {distance !== null ? (
+            <View style={styles.distanceBadge}>
+              <Feather
+                name="navigation"
+                size={10}
+                color={design.color.orangeBright}
+              />
+              <Text style={styles.distanceText}>
+                {distance < 10 ? distance.toFixed(1) : Math.round(distance)} mi
+                away
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        <Text style={styles.cardTitle} numberOfLines={2}>
           {item.title}
         </Text>
         <View style={styles.stats}>
           {item.rating !== null ? (
-            <Text style={[styles.stat, { color: colors.foreground }]}>
-              ★ {item.rating.toFixed(1)}
-            </Text>
+            <Text style={styles.stat}>★ {item.rating.toFixed(1)}</Text>
           ) : null}
           {miles(item.lengthMiles) ? (
-            <Text style={[styles.stat, { color: colors.mutedForeground }]}>
-              {miles(item.lengthMiles)}
-            </Text>
+            <Text style={styles.stat}>{miles(item.lengthMiles)}</Text>
           ) : null}
           {item.elevationFeet !== null ? (
-            <Text style={[styles.stat, { color: colors.mutedForeground }]}>
+            <Text style={styles.stat}>
               {Math.round(item.elevationFeet).toLocaleString()} ft
             </Text>
           ) : null}
           <Feather
             name="arrow-up-right"
             size={18}
-            color={colors.primary}
+            color={design.color.textFaint}
             style={{ marginLeft: "auto" }}
           />
         </View>
@@ -130,87 +146,268 @@ function RideCard({ item, onPress }: { item: RideGuide; onPress: () => void }) {
 }
 
 export default function RidesScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
   const [guides, setGuides] = useState<RideGuide[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<RideGuideFilters>({
-    difficulty: null,
-    minimumRating: null,
-    maximumDistanceMiles: null,
-  });
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [facetDifficulties, setFacetDifficulties] = useState<string[]>([]);
+  const requestSeq = useRef(0);
+  const loadingRef = useRef(false);
+  const pageRef = useRef(1);
+  const hasMoreRef = useRef(false);
 
-  const load = useCallback(async (force = false) => {
-    force ? setRefreshing(true) : setLoading(true);
-    setError(null);
-    try {
-      setGuides(await listRideGuides(force));
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "The ride library is unavailable.",
-      );
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const [searchQuery, setSearchQuery] = useState(q || "");
+
+  useEffect(() => {
+    if (q !== undefined) {
+      setSearchQuery(q);
     }
-  }, []);
+  }, [q]);
 
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
+  // Location State
+  const [activeLocation, setActiveLocation] = useState<ActiveLocation | null>(
+    null
   );
+  const [placeQuery, setPlaceQuery] = useState("");
+  const [locationStatus, setLocationStatus] = useState<
+    "idle" | "locating" | "searching" | "granted" | "denied" | "error"
+  >("idle");
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  // Filters and Sort State
+  const [sortBy, setSortBy] = useState<"nearest" | "top-rated">("top-rated");
+  const [radiusMiles, setRadiusMiles] = useState<number | null>(null);
+  const [difficulty, setDifficulty] = useState<string | null>(null);
+  const [minimumRating, setMinimumRating] = useState<number | null>(null);
+  const [routeLength, setRouteLength] = useState<
+    "short" | "medium" | "long" | null
+  >(null);
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery.trim());
+
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setDebouncedSearch(searchQuery.trim()),
+      300,
+    );
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const advancedActiveCount =
+    (difficulty ? 1 : 0) + (minimumRating ? 1 : 0) + (routeLength ? 1 : 0);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  useEffect(() => {
+    if (advancedActiveCount > 0) {
+      setShowAdvanced(true);
+    }
+  }, [advancedActiveCount]);
+
+  const searchPlace = async (query: string) => {
+    if (!query.trim()) return;
+    setLocationStatus("searching");
+    setLocationError(null);
+    try {
+      const result = await geocodeDestination(query);
+      setActiveLocation({
+        lat: result.lat,
+        lng: result.lng,
+        label: result.label || query,
+      });
+      setLocationStatus("granted");
+    } catch (err) {
+      setLocationError(
+        err instanceof Error ? err.message : "Location search failed.",
+      );
+      setLocationStatus("error");
+    }
+  };
+
+  const locateGPS = async () => {
+    setLocationStatus("locating");
+    setLocationError(null);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setLocationError("Location access denied.");
+        setLocationStatus("denied");
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      setActiveLocation({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        label: "Current GPS",
+      });
+      setLocationStatus("granted");
+    } catch (err) {
+      setLocationError("Failed to get location.");
+      setLocationStatus("error");
+    }
+  };
+
+  const clearLocation = () => {
+    setActiveLocation(null);
+    setPlaceQuery("");
+    setLocationError(null);
+    if (sortBy === "nearest") setSortBy("top-rated");
+    setRadiusMiles(null);
+  };
+
+  const handleSetSort = (s: "nearest" | "top-rated") => {
+    if (s === "nearest" && !activeLocation) {
+      setSortBy(s);
+      void locateGPS();
+    } else {
+      setSortBy(s);
+    }
+  };
+
+  const handleSetRadius = (r: number | null) => {
+    if (r !== null && !activeLocation) {
+      setRadiusMiles(r);
+      void locateGPS();
+    } else {
+      setRadiusMiles(r);
+    }
+  };
+
+  const catalogParams = useMemo(
+    () => ({
+      pageSize: 24,
+      q: debouncedSearch || undefined,
+      difficulty: difficulty || undefined,
+      minRating: minimumRating || undefined,
+      length: routeLength || undefined,
+      lat: activeLocation?.lat,
+      lng: activeLocation?.lng,
+      radiusMiles: activeLocation ? radiusMiles ?? undefined : undefined,
+      sort:
+        sortBy === "nearest" && activeLocation
+          ? ("nearest" as const)
+          : ("rating" as const),
+    }),
+    [
+      debouncedSearch,
+      difficulty,
+      minimumRating,
+      routeLength,
+      activeLocation,
+      radiusMiles,
+      sortBy,
+    ],
+  );
+  const catalogKey = JSON.stringify(catalogParams);
+
+  const loadPage = useCallback(
+    async (page: number, reset: boolean, isRefresh = false) => {
+      if (!reset && (loadingRef.current || !hasMoreRef.current)) return;
+      const seq = reset ? ++requestSeq.current : requestSeq.current;
+      loadingRef.current = true;
+      setError(null);
+      if (reset) {
+        setGuides([]);
+        setTotal(0);
+        setHasMore(false);
+        hasMoreRef.current = false;
+        pageRef.current = 1;
+        setLoading(true);
+        if (isRefresh) setRefreshing(true);
+      } else {
+        setLoadingMore(true);
+      }
+      try {
+        const response = await listRideGuides({ ...catalogParams, page });
+        if (seq !== requestSeq.current) return;
+        const seen = new Set<string>();
+        setGuides((previous) => {
+          const next = reset ? response.items : [...previous, ...response.items];
+          return next.filter((guide) => {
+            if (seen.has(guide.id)) return false;
+            seen.add(guide.id);
+            return true;
+          });
+        });
+        pageRef.current = response.page;
+        hasMoreRef.current = response.hasMore;
+        setHasMore(response.hasMore);
+        setTotal(response.total);
+        setFacetDifficulties(response.facets.difficulties);
+      } catch (loadError) {
+        if (seq !== requestSeq.current) return;
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "The ride library is unavailable.",
+        );
+      } finally {
+        if (seq === requestSeq.current) {
+          loadingRef.current = false;
+          setLoading(false);
+          setLoadingMore(false);
+          setRefreshing(false);
+        }
+      }
+    },
+    [catalogParams],
+  );
+
+  useEffect(() => {
+    void loadPage(1, true);
+  }, [catalogKey, loadPage]);
+
+  const loadNextPage = useCallback(() => {
+    if (loadingRef.current || !hasMoreRef.current) return;
+    void loadPage(pageRef.current + 1, false);
+  }, [loadPage]);
+
+  const retry = useCallback(() => {
+    void loadPage(1, true);
+  }, [loadPage]);
 
   const difficulties = useMemo(
     () =>
-      Array.from(
-        new Set(
-          guides
-            .map((guide) => guide.difficulty?.trim())
-            .filter((value): value is string => Boolean(value)),
-        ),
-      ).sort((a, b) => a.localeCompare(b)),
-    [guides],
+      [...facetDifficulties].sort((a, b) => a.localeCompare(b)),
+    [facetDifficulties],
   );
-  const filtered = useMemo(
-    () => filterRideGuides(guides, filters),
-    [filters, guides],
-  );
-  const activeFilterCount = [
-    filters.difficulty,
-    filters.minimumRating,
-    filters.maximumDistanceMiles,
-  ].filter((value) => value !== null).length;
+
+  const processedGuides = useMemo(() => {
+    return guides.map((guide) => ({ guide, distance: guide.distanceMiles }));
+  }, [guides]);
 
   const Chip = ({
     active,
     label,
     onPress,
+    disabled = false,
   }: {
     active: boolean;
     label: string;
     onPress: () => void;
+    disabled?: boolean;
   }) => (
     <Pressable
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
       style={({ pressed }) => [
         styles.chip,
-        {
-          backgroundColor: active ? colors.primary : colors.card,
-          borderColor: active ? colors.primary : colors.border,
-          opacity: pressed ? 0.82 : 1,
-        },
+        active && styles.chipActive,
+        disabled && styles.chipDisabled,
+        pressed && !disabled && styles.chipPressed,
       ]}
     >
       <Text
         style={[
           styles.chipText,
-          { color: active ? colors.primaryForeground : colors.foreground },
+          active && styles.chipTextActive,
+          disabled && styles.chipTextDisabled,
         ]}
       >
         {label}
@@ -226,9 +423,7 @@ export default function RidesScreen() {
     children: React.ReactNode;
   }) => (
     <View style={styles.filterRow}>
-      <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>
-        {label}
-      </Text>
+      <Text style={styles.filterLabel}>{label}</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -240,147 +435,271 @@ export default function RidesScreen() {
   );
 
   const header = (
-    <View>
-      <View style={[styles.hero, { backgroundColor: colors.routeBackground }]}>
-        <View style={[styles.brandRule, { backgroundColor: colors.primary }]} />
-        <Text style={[styles.kicker, { color: colors.primary }]}>
-          SCENDERS RIDES
-        </Text>
-        <Text style={[styles.heroTitle, { color: colors.routeForeground }]}>
-          Find the line worth riding.
-        </Text>
-        <Text style={[styles.heroBody, { color: colors.routeCasing }]}>
+    <View style={styles.header}>
+      <ScendersHeader />
+      <View style={styles.heroTextContainer}>
+        <View style={styles.brandRule} />
+        <Text style={styles.kicker}>RIDE LIBRARY</Text>
+        <Text style={styles.heroTitle}>Find the line worth riding.</Text>
+        <Text style={styles.heroBody}>
           Curated mountain-bike and gravel rides with route tracks ready for the
           map.
         </Text>
       </View>
 
-      <View
-        style={[
-          styles.filters,
-          { backgroundColor: colors.background, borderColor: colors.border },
-        ]}
-      >
-        <View style={styles.filterHeader}>
-          <View>
-            <Text style={[styles.filterTitle, { color: colors.foreground }]}>
-              Narrow the ride
-            </Text>
-            <Text
-              style={[styles.filterHint, { color: colors.mutedForeground }]}
-            >
-              Only facts supplied by the ride guide.
-            </Text>
-          </View>
-          {activeFilterCount ? (
+      <View style={styles.searchSection}>
+        <View style={styles.inputContainer}>
+          {activeLocation ? (
+            <View style={styles.activeLocationBadge}>
+              <Feather
+                name="map-pin"
+                size={16}
+                color={design.color.orangeBright}
+              />
+              <Text style={styles.activeLocationText} numberOfLines={1}>
+                {activeLocation.label}
+              </Text>
+              <Pressable
+                onPress={clearLocation}
+                style={styles.clearLocation}
+                hitSlop={8}
+              >
+                <Feather
+                  name="x-circle"
+                  size={16}
+                  color={design.color.textMuted}
+                />
+              </Pressable>
+            </View>
+          ) : (
+            <>
+              <Feather
+                name="map-pin"
+                size={16}
+                color={design.color.textMuted}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Destination (e.g. Moab, UT)"
+                placeholderTextColor={design.color.textMuted}
+                value={placeQuery}
+                onChangeText={setPlaceQuery}
+                onSubmitEditing={() => searchPlace(placeQuery)}
+                returnKeyType="search"
+              />
+              {locationStatus === "searching" ||
+              locationStatus === "locating" ? (
+                <ActivityIndicator
+                  size="small"
+                  color={design.color.orangeBright}
+                  style={styles.gpsButton}
+                />
+              ) : (
+                <Pressable
+                  onPress={() =>
+                    placeQuery.trim()
+                      ? void searchPlace(placeQuery)
+                      : void locateGPS()
+                  }
+                  style={styles.gpsButton}
+                  accessibilityLabel={
+                    placeQuery.trim()
+                      ? "Search destination"
+                      : "Use current GPS"
+                  }
+                  hitSlop={8}
+                >
+                  <Feather
+                    name={placeQuery.trim() ? "search" : "navigation"}
+                    size={16}
+                    color={design.color.textMuted}
+                  />
+                </Pressable>
+              )}
+            </>
+          )}
+        </View>
+        {locationError ? (
+          <Text style={styles.errorText}>{locationError}</Text>
+        ) : null}
+
+        <View style={styles.inputContainer}>
+          <Feather
+            name="search"
+            size={16}
+            color={design.color.textMuted}
+            style={styles.inputIcon}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Search rides, places, tags..."
+            placeholderTextColor={design.color.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+          {searchQuery.length > 0 && Platform.OS !== "ios" ? (
             <Pressable
-              onPress={() =>
-                setFilters({
-                  difficulty: null,
-                  minimumRating: null,
-                  maximumDistanceMiles: null,
-                })
-              }
+              onPress={() => setSearchQuery("")}
+              style={styles.gpsButton}
               hitSlop={8}
             >
-              <Text style={[styles.clearText, { color: colors.primary }]}>
-                Clear {activeFilterCount}
-              </Text>
+              <Feather
+                name="x-circle"
+                size={16}
+                color={design.color.textMuted}
+              />
             </Pressable>
           ) : null}
         </View>
-        {difficulties.length ? (
-          <FilterRow label="Difficulty">
-            <Chip
-              active={filters.difficulty === null}
-              label="Any"
-              onPress={() =>
-                setFilters((current) => ({ ...current, difficulty: null }))
-              }
-            />
-            {difficulties.map((difficulty) => (
-              <Chip
-                key={difficulty}
-                active={filters.difficulty === difficulty}
-                label={difficulty}
-                onPress={() =>
-                  setFilters((current) => ({
-                    ...current,
-                    difficulty:
-                      current.difficulty === difficulty ? null : difficulty,
-                  }))
-                }
-              />
-            ))}
-          </FilterRow>
-        ) : null}
-        <FilterRow label="Rating">
+      </View>
+
+      <View style={styles.filtersSection}>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Discovery</Text>
+        </View>
+        <FilterRow label="SORT BY">
           <Chip
-            active={filters.minimumRating === null}
-            label="Any"
-            onPress={() =>
-              setFilters((current) => ({ ...current, minimumRating: null }))
-            }
+            active={sortBy === "nearest"}
+            label="Nearest"
+            onPress={() => handleSetSort("nearest")}
           />
-          {RATING_FILTERS.map((rating) => (
-            <Chip
-              key={rating}
-              active={filters.minimumRating === rating}
-              label={`${rating}+`}
-              onPress={() =>
-                setFilters((current) => ({
-                  ...current,
-                  minimumRating:
-                    current.minimumRating === rating ? null : rating,
-                }))
-              }
-            />
-          ))}
+          <Chip
+            active={sortBy === "top-rated"}
+            label="Top Rated"
+            onPress={() => handleSetSort("top-rated")}
+          />
         </FilterRow>
-        <FilterRow label="Distance">
+
+        <FilterRow label="RADIUS">
           <Chip
-            active={filters.maximumDistanceMiles === null}
+            active={radiusMiles === null}
             label="Any"
-            onPress={() =>
-              setFilters((current) => ({
-                ...current,
-                maximumDistanceMiles: null,
-              }))
-            }
+            onPress={() => handleSetRadius(null)}
           />
-          {DISTANCE_FILTERS.map((distance) => (
-            <Chip
-              key={distance}
-              active={filters.maximumDistanceMiles === distance}
-              label={`Up to ${distance} mi`}
-              onPress={() =>
-                setFilters((current) => ({
-                  ...current,
-                  maximumDistanceMiles:
-                    current.maximumDistanceMiles === distance ? null : distance,
-                }))
-              }
-            />
-          ))}
+          <Chip
+            active={radiusMiles === 10}
+            label="10 mi"
+            onPress={() => handleSetRadius(10)}
+          />
+          <Chip
+            active={radiusMiles === 25}
+            label="25 mi"
+            onPress={() => handleSetRadius(25)}
+          />
+          <Chip
+            active={radiusMiles === 50}
+            label="50 mi"
+            onPress={() => handleSetRadius(50)}
+          />
         </FilterRow>
       </View>
 
+      <View style={styles.advancedSection}>
+        <Pressable
+          onPress={() => setShowAdvanced(!showAdvanced)}
+          style={styles.advancedHeader}
+          hitSlop={8}
+        >
+          <Text style={styles.advancedTitle}>
+            Advanced Filters{" "}
+            {advancedActiveCount > 0 ? `(${advancedActiveCount})` : ""}
+          </Text>
+          <Feather
+            name={showAdvanced ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={design.color.textMuted}
+          />
+        </Pressable>
+
+        {showAdvanced && (
+          <View style={styles.advancedBody}>
+            {difficulties.length > 0 && (
+              <FilterRow label="DIFFICULTY">
+                <Chip
+                  active={difficulty === null}
+                  label="Any"
+                  onPress={() => setDifficulty(null)}
+                />
+                {difficulties.map((diff) => (
+                  <Chip
+                    key={diff}
+                    active={difficulty === diff}
+                    label={diff}
+                    onPress={() => setDifficulty(diff)}
+                  />
+                ))}
+              </FilterRow>
+            )}
+            <FilterRow label="RATING">
+              <Chip
+                active={minimumRating === null}
+                label="Any"
+                onPress={() => setMinimumRating(null)}
+              />
+              {RATING_FILTERS.map((r) => (
+                <Chip
+                  key={r}
+                  active={minimumRating === r}
+                  label={`${r}+`}
+                  onPress={() => setMinimumRating(r)}
+                />
+              ))}
+            </FilterRow>
+            <FilterRow label="ROUTE LENGTH">
+              <Chip
+                active={routeLength === null}
+                label="Any"
+                onPress={() => setRouteLength(null)}
+              />
+              <Chip
+                active={routeLength === "short"}
+                label="< 10 mi"
+                onPress={() => setRouteLength("short")}
+              />
+              <Chip
+                active={routeLength === "medium"}
+                label="10-25 mi"
+                onPress={() => setRouteLength("medium")}
+              />
+              <Chip
+                active={routeLength === "long"}
+                label="25+ mi"
+                onPress={() => setRouteLength("long")}
+              />
+            </FilterRow>
+            {advancedActiveCount > 0 && (
+              <Pressable
+                onPress={() => {
+                  setDifficulty(null);
+                  setMinimumRating(null);
+                  setRouteLength(null);
+                }}
+                style={styles.clearAdvancedBtn}
+              >
+                <Text style={styles.clearAdvancedText}>Clear Advanced</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+      </View>
+
       <View style={styles.resultsHeader}>
-        <Text style={[styles.resultsTitle, { color: colors.foreground }]}>
-          Ride library
-        </Text>
-        <Text style={[styles.resultsCount, { color: colors.mutedForeground }]}>
-          {filtered.length} {filtered.length === 1 ? "ride" : "rides"}
+        <Text style={styles.resultsTitle}>Ride library</Text>
+        <Text style={styles.resultsCount}>
+          {total} {total === 1 ? "ride" : "rides"}
         </Text>
       </View>
     </View>
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={styles.container}>
       <FlatList
-        data={filtered}
-        keyExtractor={(guide) => guide.id}
+        data={processedGuides}
+        keyExtractor={(item) => item.guide.id}
         contentContainerStyle={{
           paddingTop: insets.top + WEB_TOP_INSET,
           paddingBottom: insets.bottom + WEB_BOTTOM_INSET + 104,
@@ -390,76 +709,86 @@ export default function RidesScreen() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => void load(true)}
-            tintColor={colors.primary}
+            onRefresh={() => void loadPage(1, true, true)}
+            tintColor={design.color.orangeBright}
           />
         }
+        onEndReached={loadNextPage}
+        onEndReachedThreshold={0.5}
         renderItem={({ item }) => (
           <RideCard
-            item={item}
+            item={item.guide}
+            distance={item.distance}
             onPress={() =>
-              router.push(`/rides/${encodeURIComponent(item.slug)}`)
+              router.push(`/rides/${encodeURIComponent(item.guide.slug)}`)
             }
           />
         )}
         ListEmptyComponent={
           loading ? (
             <View style={styles.state}>
-              <ActivityIndicator color={colors.primary} />
-              <Text
-                style={[styles.stateText, { color: colors.mutedForeground }]}
-              >
-                Loading Scenders rides…
-              </Text>
+              <ActivityIndicator color={design.color.orangeBright} />
+              <Text style={styles.stateText}>Loading Scenders rides…</Text>
             </View>
           ) : error ? (
-            <View
-              style={[
-                styles.stateCard,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              <Feather name="wifi-off" size={24} color={colors.primary} />
-              <Text style={[styles.stateTitle, { color: colors.foreground }]}>
+            <View style={styles.stateCard}>
+              <Feather
+                name="wifi-off"
+                size={24}
+                color={design.color.orangeBright}
+              />
+              <Text style={styles.stateTitle}>
                 Couldn’t load the ride library
               </Text>
-              <Text
-                style={[styles.stateText, { color: colors.mutedForeground }]}
-              >
-                {error}
-              </Text>
+              <Text style={styles.stateText}>{error}</Text>
               <Pressable
-                onPress={() => void load(true)}
-                style={[styles.retry, { backgroundColor: colors.primary }]}
+                onPress={retry}
+                style={styles.retryBtn}
               >
-                <Text
-                  style={[
-                    styles.retryText,
-                    { color: colors.primaryForeground },
-                  ]}
-                >
-                  Try again
-                </Text>
+                <Text style={styles.retryText}>Try again</Text>
               </Pressable>
             </View>
           ) : (
-            <View
-              style={[
-                styles.stateCard,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              <Feather name="sliders" size={24} color={colors.primary} />
-              <Text style={[styles.stateTitle, { color: colors.foreground }]}>
-                No rides match
-              </Text>
-              <Text
-                style={[styles.stateText, { color: colors.mutedForeground }]}
-              >
-                Clear a filter to widen the list.
+            <View style={styles.stateCard}>
+              <Feather
+                name="sliders"
+                size={24}
+                color={design.color.orangeBright}
+              />
+              <Text style={styles.stateTitle}>No rides match</Text>
+              <Text style={styles.stateText}>
+                {searchQuery.trim() || advancedActiveCount > 0 || radiusMiles
+                  ? "Try adjusting your search or filters."
+                  : "Clear a filter to widen the list."}
               </Text>
             </View>
           )
+        }
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={styles.loadMoreState}>
+              <ActivityIndicator color={design.color.orangeBright} />
+              <Text style={styles.stateText}>Loading more rides…</Text>
+            </View>
+          ) : error && guides.length > 0 ? (
+            <View style={styles.loadMoreState}>
+              <Text style={styles.stateText}>{error}</Text>
+              <Pressable onPress={retry} style={styles.retryBtn}>
+                <Text style={styles.retryText}>Try again</Text>
+              </Pressable>
+            </View>
+          ) : hasMore ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Load more ride guides"
+              onPress={loadNextPage}
+              style={styles.loadMoreBtn}
+            >
+              <Text style={styles.loadMoreText}>Load more rides</Text>
+            </Pressable>
+          ) : guides.length > 0 ? (
+            <Text style={styles.endText}>You’ve reached the end.</Text>
+          ) : null
         }
       />
     </View>
@@ -467,97 +796,239 @@ export default function RidesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  hero: { borderRadius: 24, marginBottom: 16, marginTop: 14, padding: 24 },
-  brandRule: { borderRadius: 99, height: 4, marginBottom: 20, width: 42 },
-  kicker: { fontFamily: "Inter_700Bold", fontSize: 11, letterSpacing: 2 },
+  container: {
+    flex: 1,
+    backgroundColor: design.color.canvas,
+  },
+  header: {
+    paddingBottom: 8,
+  },
+  heroTextContainer: {
+    backgroundColor: design.color.surface,
+    borderRadius: design.radius.medium,
+    padding: 24,
+    marginBottom: 16,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: design.color.line,
+  },
+  brandRule: {
+    borderRadius: 99,
+    height: 3,
+    marginBottom: 16,
+    width: 32,
+    backgroundColor: design.color.orangeBright,
+  },
+  kicker: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.5,
+    color: design.color.orangeBright,
+    marginBottom: 8,
+  },
   heroTitle: {
     fontFamily: "Inter_700Bold",
-    fontSize: 34,
-    letterSpacing: -1.1,
-    lineHeight: 38,
-    marginTop: 10,
-    maxWidth: 300,
+    fontSize: 28,
+    letterSpacing: -0.8,
+    lineHeight: 34,
+    color: design.color.text,
+    marginBottom: 8,
   },
   heroBody: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
-    lineHeight: 21,
-    marginTop: 12,
-    maxWidth: 320,
-    opacity: 0.78,
+    lineHeight: 20,
+    color: design.color.textMuted,
   },
-  filters: {
-    borderBottomWidth: 1,
-    borderTopWidth: 1,
-    marginHorizontal: -18,
-    paddingHorizontal: 18,
-    paddingVertical: 18,
+  searchSection: {
+    marginBottom: 10,
   },
-  filterHeader: {
+  inputContainer: {
+    flexDirection: "row",
     alignItems: "center",
+    backgroundColor: design.color.surfaceRaised,
+    borderRadius: design.radius.medium,
+    borderWidth: 1,
+    borderColor: design.color.line,
+    height: 48,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    fontFamily: "Inter_400Regular",
+    fontSize: 15,
+    color: design.color.text,
+    height: "100%",
+  },
+  gpsButton: {
+    padding: 8,
+    marginRight: -8,
+  },
+  activeLocationBadge: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  activeLocationText: {
+    flex: 1,
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 15,
+    color: design.color.text,
+    marginLeft: 8,
+  },
+  clearLocation: {
+    padding: 8,
+    marginRight: -8,
+  },
+  errorText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    color: design.color.danger,
+    marginTop: -4,
+    marginBottom: 10,
+    marginLeft: 4,
+  },
+  sectionHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
+    color: design.color.text,
+  },
+  filtersSection: {
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderColor: design.color.line,
+    marginTop: 6,
+  },
+  filterRow: {
     marginBottom: 16,
   },
-  filterTitle: { fontFamily: "Inter_700Bold", fontSize: 17 },
-  filterHint: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 3 },
-  clearText: { fontFamily: "Inter_700Bold", fontSize: 12 },
-  filterRow: { marginBottom: 13 },
   filterLabel: {
     fontFamily: "Inter_700Bold",
     fontSize: 10,
     letterSpacing: 1.2,
-    marginBottom: 8,
+    color: design.color.textMuted,
+    marginBottom: 10,
     textTransform: "uppercase",
   },
-  chips: { gap: 8, paddingRight: 18 },
+  chips: {
+    gap: 8,
+    paddingRight: 18,
+  },
   chip: {
-    borderRadius: 999,
+    borderRadius: design.radius.pill,
     borderWidth: 1,
-    paddingHorizontal: 13,
+    borderColor: design.color.line,
+    backgroundColor: design.color.surface,
+    paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  chipText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  chipActive: {
+    backgroundColor: design.color.orangeBright,
+    borderColor: design.color.orangeBright,
+  },
+  chipDisabled: {
+    opacity: 0.4,
+  },
+  chipPressed: {
+    opacity: 0.8,
+  },
+  chipText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    color: design.color.text,
+  },
+  chipTextActive: {
+    color: design.color.black,
+  },
+  chipTextDisabled: {
+    color: design.color.textFaint,
+  },
+  advancedSection: {
+    borderTopWidth: 1,
+    borderColor: design.color.line,
+    paddingVertical: 16,
+  },
+  advancedHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  advancedTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
+    color: design.color.text,
+  },
+  advancedBody: {
+    marginTop: 20,
+  },
+  clearAdvancedBtn: {
+    alignSelf: "flex-start",
+    marginTop: -4,
+    paddingVertical: 8,
+  },
+  clearAdvancedText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    color: design.color.orangeBright,
+  },
   resultsHeader: {
     alignItems: "baseline",
     flexDirection: "row",
     justifyContent: "space-between",
     paddingBottom: 12,
-    paddingTop: 24,
+    paddingTop: 16,
   },
-  resultsTitle: { fontFamily: "Inter_700Bold", fontSize: 22 },
-  resultsCount: { fontFamily: "Inter_500Medium", fontSize: 12 },
+  resultsTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 20,
+    color: design.color.text,
+  },
+  resultsCount: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    color: design.color.textMuted,
+  },
   card: {
-    borderRadius: 20,
+    borderRadius: design.radius.large,
     borderWidth: 1,
+    borderColor: design.color.line,
+    backgroundColor: design.color.surface,
     marginBottom: 16,
     overflow: "hidden",
     padding: 8,
   },
+  cardPressed: {
+    opacity: 0.88,
+    backgroundColor: design.color.surfacePressed,
+  },
   cardMedia: {
-    borderRadius: 15,
+    borderRadius: design.radius.medium,
     height: 190,
     overflow: "hidden",
     position: "relative",
+    backgroundColor: design.color.line,
   },
-  cardImage: { ...StyleSheet.absoluteFillObject },
+  cardImage: { ...StyleSheet.absoluteFill },
   imageFallback: {
     alignItems: "center",
     flex: 1,
-    gap: 10,
     justifyContent: "center",
-  },
-  imageFallbackText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 12,
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
   },
   mediaBadge: {
     backgroundColor: "rgba(0,0,0,0.66)",
     borderColor: "rgba(255,255,255,0.18)",
-    borderRadius: 999,
+    borderRadius: design.radius.pill,
     borderWidth: 1,
     left: 12,
     paddingHorizontal: 10,
@@ -566,52 +1037,107 @@ const styles = StyleSheet.create({
     top: 12,
   },
   mediaBadgeText: {
-    color: "#FFFFFF",
+    color: design.color.white,
     fontFamily: "Inter_700Bold",
     fontSize: 9,
     letterSpacing: 1.1,
     textTransform: "uppercase",
   },
   cardBody: { paddingHorizontal: 10, paddingBottom: 10, paddingTop: 14 },
+  cardHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
   location: {
+    flex: 1,
     fontFamily: "Inter_700Bold",
     fontSize: 10,
     letterSpacing: 1.1,
     textTransform: "uppercase",
+    color: design.color.orangeBright,
+  },
+  distanceBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  distanceText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 10,
+    color: design.color.textMuted,
   },
   cardTitle: {
     fontFamily: "Inter_700Bold",
     fontSize: 21,
     lineHeight: 27,
     marginTop: 6,
+    color: design.color.text,
   },
   stats: { alignItems: "center", flexDirection: "row", gap: 14, marginTop: 14 },
-  stat: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  stat: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    color: design.color.textMuted,
+  },
   state: { alignItems: "center", gap: 10, paddingVertical: 48 },
+  loadMoreState: { alignItems: "center", gap: 8, paddingVertical: 18 },
+  loadMoreBtn: {
+    alignSelf: "center",
+    borderColor: design.color.line,
+    borderRadius: design.radius.pill,
+    borderWidth: 1,
+    marginVertical: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  loadMoreText: {
+    color: design.color.orangeBright,
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
+  },
+  endText: {
+    color: design.color.textMuted,
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    paddingVertical: 18,
+    textAlign: "center",
+  },
   stateCard: {
     alignItems: "center",
-    borderRadius: 20,
+    borderRadius: design.radius.large,
     borderWidth: 1,
+    borderColor: design.color.line,
+    backgroundColor: design.color.surface,
     gap: 8,
     padding: 28,
+    marginTop: 16,
   },
   stateTitle: {
     fontFamily: "Inter_700Bold",
     fontSize: 18,
     marginTop: 4,
     textAlign: "center",
+    color: design.color.text,
   },
   stateText: {
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     lineHeight: 19,
     textAlign: "center",
+    color: design.color.textMuted,
   },
-  retry: {
-    borderRadius: 999,
+  retryBtn: {
+    borderRadius: design.radius.pill,
+    backgroundColor: design.color.orangeBright,
     marginTop: 8,
     paddingHorizontal: 18,
     paddingVertical: 10,
   },
-  retryText: { fontFamily: "Inter_700Bold", fontSize: 13 },
+  retryText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
+    color: design.color.black,
+  },
 });

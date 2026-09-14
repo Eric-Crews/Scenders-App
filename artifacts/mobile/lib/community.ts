@@ -1,8 +1,12 @@
 import * as FileSystem from "expo-file-system/legacy";
+import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 import type { GeoJSONFeatureCollection, Track, Waypoint } from "./types";
 import { requestPrivateProjectPhotoUpload } from "./sync";
+import { mobileApiBase } from "./api-base";
+
+const AUTH_TOKEN_KEY = "auth_session_token";
 
 export type CommunityDatasetSummary = {
   id: string;
@@ -23,6 +27,7 @@ export type CommunityDatasetSummary = {
   distanceMeters: number | null;
   elevationGainMeters: number | null;
   createdAt: string;
+  source?: "scenders-ride-guide";
 };
 
 export type CommunityRegionSummary = {
@@ -38,17 +43,18 @@ export type CommunityDatasetDetail = CommunityDatasetSummary & {
 };
 
 function apiBase(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (domain) return `https://${domain}/api`;
-  // Fallback: same-origin (works on web preview)
-  return "/api";
+  return mobileApiBase();
+}
+
+function productionRideGuideApiBase(): string {
+  return "https://scenders.com/api/mobile";
 }
 
 async function jsonFetch<T>(
   path: string,
-  init?: RequestInit & { jsonBody?: unknown },
+  init?: RequestInit & { jsonBody?: unknown; baseUrl?: string },
 ): Promise<T> {
-  const { jsonBody, ...rest } = init ?? {};
+  const { jsonBody, baseUrl = apiBase(), ...rest } = init ?? {};
   const headers: Record<string, string> = {
     Accept: "application/json",
     ...(rest.headers as Record<string, string> | undefined),
@@ -58,7 +64,7 @@ async function jsonFetch<T>(
     headers["Content-Type"] = "application/json";
     body = JSON.stringify(jsonBody);
   }
-  const res = await fetch(`${apiBase()}${path}`, { ...rest, headers, body });
+  const res = await fetch(`${baseUrl}${path}`, { ...rest, headers, body });
   if (!res.ok) {
     let detail = "";
     try {
@@ -79,12 +85,21 @@ export type ListCommunityDatasetsParams = {
   lng?: number;
   q?: string;
   region?: string;
-  limit?: number;
+  page?: number;
+  pageSize?: number;
 };
 
-export function listCommunityDatasets(
+export type CommunityDatasetPage = {
+  items: CommunityDatasetSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+};
+
+export async function listCommunityDatasets(
   params?: ListCommunityDatasetsParams,
-): Promise<CommunityDatasetSummary[]> {
+): Promise<CommunityDatasetPage> {
   const qs = new URLSearchParams();
   if (params?.lat != null && params?.lng != null) {
     qs.set("lat", String(params.lat));
@@ -94,21 +109,52 @@ export function listCommunityDatasets(
   if (term) qs.set("q", term);
   const region = params?.region?.trim();
   if (region) qs.set("region", region);
-  if (params?.limit != null) qs.set("limit", String(params.limit));
+  if (params?.page != null) qs.set("page", String(params.page));
+  if (params?.pageSize != null) qs.set("pageSize", String(params.pageSize));
   const query = qs.toString();
-  return jsonFetch<CommunityDatasetSummary[]>(
+  const payload = await jsonFetch<{
+    items?: CommunityDatasetSummary[];
+    total?: number;
+    page?: number;
+    pageSize?: number;
+    hasMore?: boolean;
+  }>(
     `/community/datasets${query ? `?${query}` : ""}`,
+    { baseUrl: productionRideGuideApiBase() },
   );
+  if (!Array.isArray(payload.items)) {
+    throw new Error("The community library returned an unexpected response.");
+  }
+  return {
+    items: payload.items.filter(
+      (dataset) => dataset.source === "scenders-ride-guide",
+    ),
+    total: Number.isFinite(payload.total) ? Number(payload.total) : 0,
+    page: Number.isFinite(payload.page) ? Number(payload.page) : params?.page ?? 1,
+    pageSize: Number.isFinite(payload.pageSize)
+      ? Number(payload.pageSize)
+      : params?.pageSize ?? 30,
+    hasMore: payload.hasMore === true,
+  };
 }
 
 export function listCommunityRegions(): Promise<CommunityRegionSummary[]> {
-  return jsonFetch<CommunityRegionSummary[]>("/community/regions");
+  return jsonFetch<CommunityRegionSummary[]>("/community/regions", {
+    baseUrl: productionRideGuideApiBase(),
+  });
 }
 
 export function getCommunityDataset(
   id: string,
 ): Promise<CommunityDatasetDetail> {
-  return jsonFetch<CommunityDatasetDetail>(`/community/datasets/${id}`);
+  return jsonFetch<CommunityDatasetDetail>(`/community/datasets/${id}`, {
+    baseUrl: productionRideGuideApiBase(),
+  }).then((dataset) => {
+    if (dataset.source !== "scenders-ride-guide") {
+      throw new Error("Only published Scenders ride-guide GPX routes can be saved.");
+    }
+    return dataset;
+  });
 }
 
 /**
@@ -121,9 +167,12 @@ export async function getCommunityDatasetStreamed(
   sizeHint: number,
   onProgress: (loaded: number, total: number) => void,
 ): Promise<CommunityDatasetDetail> {
-  const res = await fetch(`${apiBase()}/community/datasets/${id}`, {
+  const res = await fetch(
+    `${productionRideGuideApiBase()}/community/datasets/${id}`,
+    {
     headers: { Accept: "application/json" },
-  });
+    },
+  );
   if (!res.ok) {
     let detail = "";
     try {
@@ -143,7 +192,11 @@ export async function getCommunityDatasetStreamed(
   if (!res.body) {
     // Runtime doesn't expose a readable stream — fall back to a single await.
     onProgress(total, total);
-    return (await res.json()) as CommunityDatasetDetail;
+    const dataset = (await res.json()) as CommunityDatasetDetail;
+    if (dataset.source !== "scenders-ride-guide") {
+      throw new Error("Only published Scenders ride-guide GPX routes can be saved.");
+    }
+    return dataset;
   }
 
   const reader = res.body.getReader();
@@ -164,7 +217,13 @@ export async function getCommunityDatasetStreamed(
     full.set(chunk, offset);
     offset += chunk.length;
   }
-  return JSON.parse(new TextDecoder().decode(full)) as CommunityDatasetDetail;
+  const dataset = JSON.parse(
+    new TextDecoder().decode(full),
+  ) as CommunityDatasetDetail;
+  if (dataset.source !== "scenders-ride-guide") {
+    throw new Error("Only published Scenders ride-guide GPX routes can be saved.");
+  }
+  return dataset;
 }
 
 export function shareCommunityDataset(input: {
@@ -233,8 +292,8 @@ export async function uploadPhoto(localUri: string): Promise<string> {
  * Upload a local photo for a private project and return only its private object
  * path. The path is persisted server-side and never sent to project recipients.
  */
-export async function uploadPrivatePhoto(localUri: string): Promise<string> {
-  return uploadLocalPhoto(localUri, requestPrivateProjectPhotoUpload);
+export async function uploadPrivatePhoto(localUri: string, projectId: string): Promise<string> {
+  return uploadLocalPhoto(localUri, (input) => requestPrivateProjectPhotoUpload({ ...input, projectId }));
 }
 
 async function uploadLocalPhoto(
@@ -542,12 +601,23 @@ export async function bulkShareCommunityDatasets(
   onProgress?: (processed: number, total: number, failed: number) => void,
 ): Promise<{ succeeded: number; failed: number }> {
   const BATCH_SIZE = 20;
+  const MAX_BATCH_BYTES = 7.5 * 1024 * 1024;
   const CONCURRENCY = 3;
 
   const batches: (typeof datasets)[] = [];
-  for (let i = 0; i < datasets.length; i += BATCH_SIZE) {
-    batches.push(datasets.slice(i, i + BATCH_SIZE));
+  let batch: typeof datasets = [];
+  let batchBytes = 0;
+  for (const dataset of datasets) {
+    const bytes = new TextEncoder().encode(JSON.stringify(dataset)).length;
+    if (batch.length && (batch.length >= BATCH_SIZE || batchBytes + bytes > MAX_BATCH_BYTES)) {
+      batches.push(batch);
+      batch = [];
+      batchBytes = 0;
+    }
+    batch.push(dataset);
+    batchBytes += bytes;
   }
+  if (batch.length) batches.push(batch);
 
   let processed = 0;
   let failed = 0;
@@ -557,10 +627,36 @@ export async function bulkShareCommunityDatasets(
     const chunk = batches.slice(i, i + CONCURRENCY);
     const responses = await Promise.all(
       chunk.map((batch) =>
-        jsonFetch<{ results: Array<{ success: boolean; error?: string | null }> }>(
-          "/community/datasets/bulk",
-          { method: "POST", jsonBody: { datasets: batch } },
-        ).catch((err: unknown) => ({
+        SecureStore.getItemAsync(AUTH_TOKEN_KEY).then(async (token) => {
+          if (!token) throw new Error("Sign in before publishing multiple routes.");
+          for (let attempt = 0; attempt < 2; attempt++) {
+            const response = await fetch(`${apiBase()}/community/datasets/bulk`, {
+              method: "POST",
+              headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ datasets: batch }),
+            });
+            if (response.status === 429 && attempt === 0) {
+              const retrySeconds = Math.min(
+                Math.max(Number(response.headers.get("Retry-After")) || 60, 1),
+                60,
+              );
+              await new Promise((resolve) => setTimeout(resolve, retrySeconds * 1000));
+              continue;
+            }
+            if (!response.ok) {
+              const payload = await response.json().catch(() => ({})) as { error?: string };
+              throw new Error(payload.error || `Request failed: ${response.status}`);
+            }
+            return await response.json() as {
+              results: Array<{ success: boolean; error?: string | null }>;
+            };
+          }
+          throw new Error("Bulk upload could not be completed.");
+        }).catch((err: unknown) => ({
           results: batch.map(() => ({
             success: false as const,
             error: err instanceof Error ? err.message : "Network error",

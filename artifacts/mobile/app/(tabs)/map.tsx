@@ -36,6 +36,7 @@ import MapViewComponent, {
 import ElevationProfile from "@/components/ElevationProfile";
 import { LayersSheet } from "@/components/LayersSheet";
 import { MapControl } from "@/components/MapControl";
+import { ScendersMoreButton } from "@/components/ScendersChrome";
 import { Sheet } from "@/components/Sheet";
 import { useMaps } from "@/contexts/MapsContext";
 import { useRecording } from "@/contexts/RecordingContext";
@@ -270,7 +271,7 @@ export default function MapScreen() {
     if (Platform.OS === "web") {
       Alert.alert(
         "Live sharing works in the mobile app",
-        "Open Scenders Ride on your phone to create and protect a private live link.",
+        "Open Scenders on your phone to create and protect a private live link.",
       );
       return;
     }
@@ -1502,6 +1503,9 @@ export default function MapScreen() {
             top: insets.top + WEB_TOP_INSET + 8,
             left: 16,
             right: 16,
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
           },
         ]}
       >
@@ -1528,6 +1532,7 @@ export default function MapScreen() {
             {visibleDatasets.length === 1 ? "dataset" : "datasets"}
           </Text>
         </View>
+        <ScendersMoreButton />
       </View>
 
       {/* Right controls */}

@@ -71,14 +71,18 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => <TabIcon name="home" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <TabIcon name="home" color={color as string} />
+          ),
         }}
       />
       <Tabs.Screen
         name="rides"
         options={{
           title: "Explore",
-          tabBarIcon: ({ color }) => <TabIcon name="compass" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <TabIcon name="compass" color={color as string} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -92,14 +96,18 @@ export default function TabLayout() {
         name="tracks"
         options={{
           title: "Rides",
-          tabBarIcon: ({ color }) => <TabIcon name="activity" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <TabIcon name="activity" color={color as string} />
+          ),
         }}
       />
       <Tabs.Screen
         name="library"
         options={{
           title: "Saved",
-          tabBarIcon: ({ color }) => <TabIcon name="bookmark" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <TabIcon name="bookmark" color={color as string} />
+          ),
         }}
       />
       <Tabs.Screen name="waypoints" options={{ href: null }} />

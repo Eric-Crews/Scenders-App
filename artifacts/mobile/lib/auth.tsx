@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, typ
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import * as SecureStore from "expo-secure-store";
+import { mobileApiOrigin } from "./api-base";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -37,10 +38,7 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 function getApiBaseUrl(): string {
-  if (process.env.EXPO_PUBLIC_DOMAIN) {
-    return `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
-  }
-  return "";
+  return mobileApiOrigin();
 }
 
 function getClientId(): string {
@@ -75,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/auth/user`, {
+       const res = await fetch(`${apiBase}/api/mobile/auth/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = (await res.json()) as { user?: User | null };
@@ -108,12 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         const apiBase = getApiBaseUrl();
-        if (!apiBase) {
-          console.error("API base URL is not configured.");
-          return;
-        }
-
-        const exchangeRes = await fetch(`${apiBase}/api/mobile-auth/token-exchange`, {
+        const exchangeRes = await fetch(`${apiBase}/api/mobile/mobile-auth/token-exchange`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -156,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
       if (token) {
         const apiBase = getApiBaseUrl();
-        await fetch(`${apiBase}/api/mobile-auth/logout`, {
+         await fetch(`${apiBase}/api/mobile/mobile-auth/logout`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -173,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!token) throw new Error("Sign in is required to delete your account.");
 
     const apiBase = getApiBaseUrl();
-    const response = await fetch(`${apiBase}/api/auth/account`, {
+     const response = await fetch(`${apiBase}/api/mobile/auth/account`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });

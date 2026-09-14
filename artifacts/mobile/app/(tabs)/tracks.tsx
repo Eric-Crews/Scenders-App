@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ScendersMoreButton } from "@/components/ScendersChrome";
 import ElevationProfile from "@/components/ElevationProfile";
 import { WEB_BASE_URL } from "@/constants/site";
 import { useMaps } from "@/contexts/MapsContext";
@@ -78,7 +79,7 @@ export default function TracksScreen() {
     if (Platform.OS === "web") {
       Alert.alert(
         "Use the mobile app",
-        "Sharing links is done from the Scenders Ride mobile app.",
+        "Sharing links is done from the Scenders mobile app.",
       );
       return;
     }
@@ -94,7 +95,7 @@ export default function TracksScreen() {
     if (isAuthenticated && (await refreshSession())) return true;
     Alert.alert(
       "Sign in to create a route link",
-      "Route links are connected to your Scenders Ride account so you can manage or revoke them later.",
+      "Route links are connected to your Scenders account so you can manage or revoke them later.",
       [
         { text: "Not now", style: "cancel" },
         { text: "Sign in", onPress: () => void login() },
@@ -253,7 +254,7 @@ export default function TracksScreen() {
     if (Platform.OS === "web") {
       Alert.alert(
         "Use the mobile app",
-        "Ride stories are generated from the Scenders Ride mobile app.",
+        "Ride stories are generated from the Scenders mobile app.",
       );
       return;
     }
@@ -309,7 +310,7 @@ export default function TracksScreen() {
       const webUrl = `${WEB_BASE_URL}/blog/${post.slug}`;
       Alert.alert(
         "Blog post published",
-        `“${post.title}” is now live on Scenders Ride.`,
+        `“${post.title}” is now live on Scenders.`,
         [
           { text: "Done", style: "cancel" },
           { text: "Open on web", onPress: () => Linking.openURL(webUrl) },
@@ -513,10 +514,13 @@ export default function TracksScreen() {
             My Rides
           </Text>
         </View>
-        <View style={[styles.countPill, { backgroundColor: colors.secondary }]}>
-          <Text style={[styles.countText, { color: colors.foreground }]}>
-            {tracks.length}
-          </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View style={[styles.countPill, { backgroundColor: colors.secondary }]}>
+            <Text style={[styles.countText, { color: colors.foreground }]}>
+              {tracks.length}
+            </Text>
+          </View>
+          <ScendersMoreButton />
         </View>
       </View>
 
@@ -584,7 +588,7 @@ export default function TracksScreen() {
               {publishing
                 ? `${formatDistance(publishing.distanceMeters, settings.units)} · ${
                     publishing.pointCount
-                  } pts · shared so other Scenders Ride users can download it.`
+                  } pts · shared so other Scenders users can download it.`
                 : ""}
             </Text>
 

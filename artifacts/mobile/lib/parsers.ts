@@ -1,6 +1,6 @@
 import toGeoJSON from "@mapbox/togeojson";
 import JSZip from "jszip";
-import { DOMParser } from "xmldom";
+import { DOMParser } from "@xmldom/xmldom";
 
 import type {
   GeoJSONFeature,
