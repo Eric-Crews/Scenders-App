@@ -110,7 +110,11 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "extra": {},
+    "extra": {
+      "eas": {
+        "projectId": "07278263-02a2-49df-80eb-dd998f20de86"
+      }
+    },
     "assetBundlePatterns": ["assets/**/*"]
   }
 }
