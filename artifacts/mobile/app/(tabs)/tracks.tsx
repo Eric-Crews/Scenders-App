@@ -409,7 +409,7 @@ export default function TracksScreen() {
           />
           <Pressable
             onPress={() =>
-              router.push({ pathname: "/", params: { follow: item.id } })
+              router.push({ pathname: "/map", params: { follow: item.id } })
             }
             hitSlop={10}
             style={({ pressed: p }) => [
@@ -422,7 +422,7 @@ export default function TracksScreen() {
           {item.kind === "plotted" ? (
             <Pressable
               onPress={() =>
-                router.push({ pathname: "/", params: { edit: item.id } })
+                router.push({ pathname: "/map", params: { edit: item.id } })
               }
               hitSlop={10}
               style={({ pressed: p }) => [
@@ -540,7 +540,7 @@ export default function TracksScreen() {
               path is saved when you stop.
             </Text>
             <Pressable
-              onPress={() => router.push("/")}
+              onPress={() => router.push("/map")}
               style={({ pressed }) => [
                 styles.emptyBtn,
                 {
