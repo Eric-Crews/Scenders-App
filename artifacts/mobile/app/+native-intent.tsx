@@ -33,7 +33,7 @@ export function redirectSystemPath({
     if (url.pathname.startsWith("/trails/")) {
       const slug = url.pathname.slice("/trails/".length).split("/")[0];
       if (slug) {
-        return `/?communityGuide=${encodeURIComponent(slug)}`;
+        return `/map?communityGuide=${encodeURIComponent(slug)}`;
       }
     }
 
