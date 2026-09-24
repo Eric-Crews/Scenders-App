@@ -178,6 +178,8 @@ export default function RidesScreen() {
     null
   );
   const [placeQuery, setPlaceQuery] = useState("");
+  const [locationMode, setLocationMode] = useState<"nearby" | "destination" | null>(null);
+  const locationRequestId = useRef(0);
   const [locationStatus, setLocationStatus] = useState<
     "idle" | "locating" | "searching" | "granted" | "denied" | "error"
   >("idle");
@@ -213,17 +215,22 @@ export default function RidesScreen() {
 
   const searchPlace = async (query: string) => {
     if (!query.trim()) return;
+    const requestId = ++locationRequestId.current;
     setLocationStatus("searching");
     setLocationError(null);
     try {
       const result = await geocodeDestination(query);
+      if (requestId !== locationRequestId.current) return;
       setActiveLocation({
         lat: result.lat,
         lng: result.lng,
         label: result.label || query,
       });
+      setSortBy("nearest");
+      setRadiusMiles(50);
       setLocationStatus("granted");
     } catch (err) {
+      if (requestId !== locationRequestId.current) return;
       setLocationError(
         err instanceof Error ? err.message : "Location search failed.",
       );
@@ -231,11 +238,14 @@ export default function RidesScreen() {
     }
   };
 
-  const locateGPS = async () => {
+  const locateGPS = async (selectedRadius = 50) => {
+    const requestId = ++locationRequestId.current;
+    setLocationMode("nearby");
     setLocationStatus("locating");
     setLocationError(null);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
+      if (requestId !== locationRequestId.current) return;
       if (status !== "granted") {
         setLocationError("Location access denied.");
         setLocationStatus("denied");
@@ -244,19 +254,26 @@ export default function RidesScreen() {
       const pos = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
+      if (requestId !== locationRequestId.current) return;
       setActiveLocation({
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
         label: "Current GPS",
       });
+      setSortBy("nearest");
+      setRadiusMiles(selectedRadius);
       setLocationStatus("granted");
     } catch (err) {
+      if (requestId !== locationRequestId.current) return;
       setLocationError("Failed to get location.");
       setLocationStatus("error");
     }
   };
 
   const clearLocation = () => {
+    ++locationRequestId.current;
+    setLocationMode(null);
+    setLocationStatus("idle");
     setActiveLocation(null);
     setPlaceQuery("");
     setLocationError(null);
@@ -266,19 +283,19 @@ export default function RidesScreen() {
 
   const handleSetSort = (s: "nearest" | "top-rated") => {
     if (s === "nearest" && !activeLocation) {
-      setSortBy(s);
       void locateGPS();
     } else {
       setSortBy(s);
+      if (s === "nearest" && radiusMiles === null) setRadiusMiles(50);
     }
   };
 
   const handleSetRadius = (r: number | null) => {
     if (r !== null && !activeLocation) {
-      setRadiusMiles(r);
-      void locateGPS();
+      void locateGPS(r);
     } else {
       setRadiusMiles(r);
+      if (r === null && sortBy === "nearest") setSortBy("top-rated");
     }
   };
 
@@ -450,78 +467,103 @@ export default function RidesScreen() {
       </View>
 
       <View style={styles.searchSection}>
-        <View style={styles.inputContainer}>
-          {activeLocation ? (
+        <View style={styles.locationChoices}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Explore Rides Nearby"
+            accessibilityState={{ selected: locationMode === "nearby" }}
+            onPress={() => void locateGPS()}
+            style={({ pressed }) => [
+              styles.locationChoice,
+              locationMode === "nearby" && styles.locationChoiceActive,
+              pressed && styles.chipPressed,
+            ]}
+          >
+            <Feather name="navigation" size={18} color={locationMode === "nearby" ? design.color.black : design.color.orangeBright} />
+            <Text style={[styles.locationChoiceText, locationMode === "nearby" && styles.locationChoiceTextActive]}>
+              Explore Rides Nearby
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Choose Destination"
+            accessibilityState={{ selected: locationMode === "destination" }}
+            onPress={() => {
+              ++locationRequestId.current;
+              setLocationMode("destination");
+              setLocationStatus("idle");
+              setLocationError(null);
+            }}
+            style={({ pressed }) => [
+              styles.locationChoice,
+              locationMode === "destination" && styles.locationChoiceActive,
+              pressed && styles.chipPressed,
+            ]}
+          >
+            <Feather name="map-pin" size={18} color={locationMode === "destination" ? design.color.black : design.color.orangeBright} />
+            <Text style={[styles.locationChoiceText, locationMode === "destination" && styles.locationChoiceTextActive]}>
+              Choose Destination
+            </Text>
+          </Pressable>
+        </View>
+        {activeLocation ? (
+          <View style={styles.inputContainer}>
             <View style={styles.activeLocationBadge}>
-              <Feather
-                name="map-pin"
-                size={16}
-                color={design.color.orangeBright}
-              />
+              <Feather name="map-pin" size={16} color={design.color.orangeBright} />
               <Text style={styles.activeLocationText} numberOfLines={1}>
-                {activeLocation.label}
+                {activeLocation.label} · {radiusMiles ?? 50} mi
               </Text>
               <Pressable
                 onPress={clearLocation}
                 style={styles.clearLocation}
                 hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Clear starting point"
               >
-                <Feather
-                  name="x-circle"
-                  size={16}
-                  color={design.color.textMuted}
-                />
+                <Feather name="x-circle" size={16} color={design.color.textMuted} />
               </Pressable>
             </View>
-          ) : (
-            <>
-              <Feather
-                name="map-pin"
-                size={16}
-                color={design.color.textMuted}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Destination (e.g. Moab, UT)"
-                placeholderTextColor={design.color.textMuted}
-                value={placeQuery}
-                onChangeText={setPlaceQuery}
-                onSubmitEditing={() => searchPlace(placeQuery)}
-                returnKeyType="search"
-              />
-              {locationStatus === "searching" ||
-              locationStatus === "locating" ? (
-                <ActivityIndicator
-                  size="small"
-                  color={design.color.orangeBright}
-                  style={styles.gpsButton}
-                />
-              ) : (
-                <Pressable
-                  onPress={() =>
-                    placeQuery.trim()
-                      ? void searchPlace(placeQuery)
-                      : void locateGPS()
-                  }
-                  style={styles.gpsButton}
-                  accessibilityLabel={
-                    placeQuery.trim()
-                      ? "Search destination"
-                      : "Use current GPS"
-                  }
-                  hitSlop={8}
-                >
-                  <Feather
-                    name={placeQuery.trim() ? "search" : "navigation"}
-                    size={16}
-                    color={design.color.textMuted}
-                  />
-                </Pressable>
-              )}
-            </>
-          )}
-        </View>
+          </View>
+        ) : null}
+        {locationMode === "destination" ? (
+          <View style={styles.inputContainer}>
+            <Feather name="search" size={16} color={design.color.textMuted} style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              accessibilityLabel="Starting point or destination"
+              placeholder="City, state, or starting point"
+              placeholderTextColor={design.color.textMuted}
+              value={placeQuery}
+              onChangeText={(value) => {
+                ++locationRequestId.current;
+                setPlaceQuery(value);
+                setLocationStatus("idle");
+              }}
+              onSubmitEditing={() => void searchPlace(placeQuery)}
+              returnKeyType="search"
+            />
+            {locationStatus === "searching" ? (
+              <ActivityIndicator size="small" color={design.color.orangeBright} style={styles.gpsButton} />
+            ) : (
+              <Pressable
+                onPress={() => void searchPlace(placeQuery)}
+                disabled={!placeQuery.trim()}
+                accessibilityRole="button"
+                accessibilityLabel="Search starting point"
+                style={styles.gpsButton}
+                hitSlop={8}
+              >
+                <Feather name="arrow-right" size={18} color={design.color.orangeBright} />
+              </Pressable>
+            )}
+          </View>
+        ) : null}
+        {locationStatus === "locating" && (
+          <Text style={styles.locationHint}>Finding rides near your current location…</Text>
+        )}
+        {locationMode === "destination" && (
+          <Text style={styles.locationHint}>Search a place to see the nearest rides within 50 miles.</Text>
+        )}
         {locationError ? (
           <Text style={styles.errorText}>{locationError}</Text>
         ) : null}
@@ -689,7 +731,13 @@ export default function RidesScreen() {
       </View>
 
       <View style={styles.resultsHeader}>
-        <Text style={styles.resultsTitle}>Ride library</Text>
+        <Text style={styles.resultsTitle}>
+          {activeLocation
+            ? activeLocation.label === "Current GPS"
+              ? "Rides nearby"
+              : `Rides near ${activeLocation.label}`
+            : "Ride library"}
+        </Text>
         <Text style={styles.resultsCount}>
           {total} {total === 1 ? "ride" : "rides"}
         </Text>
@@ -844,6 +892,44 @@ const styles = StyleSheet.create({
   },
   searchSection: {
     marginBottom: 10,
+  },
+  locationChoices: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 10,
+  },
+  locationChoice: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 76,
+    borderRadius: design.radius.medium,
+    borderWidth: 1,
+    borderColor: design.color.line,
+    backgroundColor: design.color.surface,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+  },
+  locationChoiceActive: {
+    backgroundColor: design.color.orangeBright,
+    borderColor: design.color.orangeBright,
+  },
+  locationChoiceText: {
+    color: design.color.text,
+    fontFamily: "Inter_700Bold",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  locationChoiceTextActive: {
+    color: design.color.black,
+  },
+  locationHint: {
+    color: design.color.textMuted,
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    marginBottom: 10,
+    marginLeft: 4,
   },
   inputContainer: {
     flexDirection: "row",
