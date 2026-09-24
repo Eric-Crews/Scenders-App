@@ -511,7 +511,7 @@ export default function RidesScreen() {
             <View style={styles.activeLocationBadge}>
               <Feather name="map-pin" size={16} color={design.color.orangeBright} />
               <Text style={styles.activeLocationText} numberOfLines={1}>
-                {activeLocation.label} · {radiusMiles ?? 50} mi
+                {activeLocation.label} · {radiusMiles === null ? "Any distance" : `${radiusMiles} mi`}
               </Text>
               <Pressable
                 onPress={clearLocation}
@@ -562,7 +562,7 @@ export default function RidesScreen() {
           <Text style={styles.locationHint}>Finding rides near your current location…</Text>
         )}
         {locationMode === "destination" && (
-          <Text style={styles.locationHint}>Search a place to see the nearest rides within 50 miles.</Text>
+          <Text style={styles.locationHint}>Search a starting point to find nearby rides. Adjust the radius below.</Text>
         )}
         {locationError ? (
           <Text style={styles.errorText}>{locationError}</Text>
