@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { normalizeRideGuide, normalizeTrack } from "./rideForest";
+import { normalizeRideGuide, normalizeTrack, rideGuideImageUrl, rideGuideImageUrls } from "./rideForest";
 
 const line = [[-82.55, 35.58, 650], [-82.54, 35.59, 675]];
 
@@ -52,6 +52,37 @@ test("uses the first usable route representation", () => {
     title: "Guide",
     trackCoordinates: { type: "FeatureCollection", features: [] },
     gpxCoordinates: line,
+  });
+  assert.equal(guide?.trackCoordinates.length, 2);
+});
+test("uses absolute photo URLs for native ride cards and tries the thumbnail after a failed featured image", () => {
+  const guide = normalizeRideGuide({
+    id: "guide-photo",
+    slug: "guide-photo",
+    title: "Photo ride",
+    featuredImage: "/uploads/ride-photo.webp",
+    thumbnailUrl: "images/ride-thumbnail.webp",
+  });
+  assert.ok(guide);
+  assert.equal(guide.featuredImage, "https://scenders.com/uploads/ride-photo.webp");
+  assert.deepEqual(rideGuideImageUrls(guide), [
+    "https://scenders.com/uploads/ride-photo.webp",
+    "https://scenders.com/images/ride-thumbnail.webp",
+  ]);
+  assert.equal(rideGuideImageUrl("https://cdn.example.com/ride.jpg"), "https://cdn.example.com/ride.jpg");
+  assert.equal(rideGuideImageUrl("javascript:alert(1)"), null);
+  assert.deepEqual(rideGuideImageUrls({ featuredImage: "/same.jpg", thumbnailUrl: "/same.jpg" }), [
+    "https://scenders.com/same.jpg",
+  ]);
+});
+
+test("uses published route variants when the older track field is empty", () => {
+  const guide = normalizeRideGuide({
+    id: "guide-variants",
+    slug: "guide-variants",
+    title: "Mapped ride",
+    trackCoordinates: [],
+    trackVariants: [{ coordinates: line }],
   });
   assert.equal(guide?.trackCoordinates.length, 2);
 });
