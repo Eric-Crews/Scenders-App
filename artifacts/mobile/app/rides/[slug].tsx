@@ -24,6 +24,7 @@ import {
   getRideGuide,
   rideGuideBounds,
   rideGuideGeoJson,
+  rideGuideImageUrls,
   rideGuideWebUrl,
   SCENDERS_SHOP_URL,
   type RideGuide,
@@ -73,7 +74,7 @@ export default function RideDetailScreen() {
   const [guide, setGuide] = useState<RideGuide | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [heroImageFailed, setHeroImageFailed] = useState(false);
+  const [heroImageIndex, setHeroImageIndex] = useState(0);
 
   const load = useCallback(async () => {
     if (!slug) return;
@@ -97,7 +98,7 @@ export default function RideDetailScreen() {
   }, [load]);
 
   useEffect(() => {
-    setHeroImageFailed(false);
+    setHeroImageIndex(0);
   }, [guide?.id]);
 
   const savedDataset = useMemo(
@@ -231,7 +232,7 @@ export default function RideDetailScreen() {
       : null,
   ].filter((fact): fact is { label: string; value: string } => Boolean(fact));
   const hasTrack = guide.trackCoordinates.length >= 2;
-  const imageUrl = guide.featuredImage || guide.thumbnailUrl;
+  const imageUrl = rideGuideImageUrls(guide)[heroImageIndex];
   const editorial = guide.content;
   const hasStructuredEditorial = Boolean(
     editorial?.introduction ||
@@ -251,7 +252,7 @@ export default function RideDetailScreen() {
           paddingHorizontal: 18,
         }}
       >
-        {imageUrl && !heroImageFailed ? (
+        {imageUrl ? (
           <View
             style={[
               styles.heroMedia,
@@ -263,7 +264,7 @@ export default function RideDetailScreen() {
               style={styles.heroImage}
               contentFit="cover"
               transition={200}
-              onError={() => setHeroImageFailed(true)}
+              onError={() => setHeroImageIndex((index) => index + 1)}
             />
             <LinearGradient
               colors={["rgba(0,0,0,0.02)", "rgba(0,0,0,0.66)"]}

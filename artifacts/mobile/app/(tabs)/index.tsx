@@ -26,7 +26,7 @@ import {
 import { scendersDesign as design } from "@/constants/scendersDesign";
 import { useMaps } from "@/contexts/MapsContext";
 import { useRecording } from "@/contexts/RecordingContext";
-import { listHomeRideGuides, type RideGuide } from "@/lib/rideForest";
+import { listHomeRideGuides, rideGuideImageUrls, type RideGuide } from "@/lib/rideForest";
 import { formatDuration } from "@/lib/trackRecording";
 import type { Track } from "@/lib/types";
 import { formatDistance } from "@/lib/units";
@@ -215,7 +215,9 @@ function TrackRow({
 }
 
 function GuideRow({ guide }: { guide: RideGuide }) {
-  const imageUrl = guide.thumbnailUrl || guide.featuredImage;
+  const [imageIndex, setImageIndex] = useState(0);
+  const imageUrl = rideGuideImageUrls(guide)[imageIndex];
+  useEffect(() => setImageIndex(0), [guide.id]);
   return (
     <Pressable
       accessibilityRole="button"
@@ -228,6 +230,7 @@ function GuideRow({ guide }: { guide: RideGuide }) {
           style={styles.guideThumb}
           contentFit="cover"
           transition={160}
+          onError={() => setImageIndex((index) => index + 1)}
         />
       ) : (
         <View style={styles.routeGlyph}>
@@ -256,6 +259,7 @@ export default function HomeScreen() {
   const recording = useRecording();
   const [guides, setGuides] = useState<RideGuide[]>([]);
   const [guidesLoading, setGuidesLoading] = useState(true);
+  const [heroImageIndex, setHeroImageIndex] = useState(0);
   const [lastLocation, setLastLocation] = useState<Coordinates | null>(null);
   const [locationState, setLocationState] = useState<LocationState>("locating");
   const [showPrimer, setShowPrimer] = useState(false);
@@ -384,8 +388,10 @@ export default function HomeScreen() {
     (total, region) => total + region.tileCount,
     0,
   );
-  const heroImage =
-    featuredGuide?.featuredImage || featuredGuide?.thumbnailUrl || null;
+  useEffect(() => setHeroImageIndex(0), [featuredGuide?.id]);
+  const heroImage = featuredGuide
+    ? rideGuideImageUrls(featuredGuide)[heroImageIndex] ?? null
+    : null;
 
   const dismissPrimer = () => {
     setShowPrimer(false);
@@ -473,6 +479,7 @@ export default function HomeScreen() {
                 style={StyleSheet.absoluteFill}
                 contentFit="cover"
                 transition={220}
+                onError={() => setHeroImageIndex((index) => index + 1)}
               />
             ) : (
               <View style={styles.heroEmptyArt}>

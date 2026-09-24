@@ -91,6 +91,27 @@ export type RideGuidePage = {
   };
 };
 
+export function rideGuideImageUrl(value: unknown): string | null {
+  const image = stringOrNull(value);
+  if (!image) return null;
+  try {
+    const url = new URL(image, `${rideForestBaseUrl()}/`);
+    return url.protocol === "https:" || url.protocol === "http:"
+      ? url.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function rideGuideImageUrls(guide: Pick<RideGuide, "featuredImage" | "thumbnailUrl">): string[] {
+  return [...new Set(
+    [guide.featuredImage, guide.thumbnailUrl]
+      .map(rideGuideImageUrl)
+      .filter((url): url is string => Boolean(url)),
+  )];
+}
+
 function rideForestBaseUrl(): string {
   return (
     process.env.EXPO_PUBLIC_RIDE_FOREST_BASE_URL?.trim() ||
@@ -260,10 +281,12 @@ export function normalizeRideGuide(value: unknown): RideGuide | null {
 
   const track = recordOrNull(source.track);
 
+  const trackVariants = Array.isArray(source.trackVariants) ? source.trackVariants : [];
   const trackCandidates = [
     source.trackCoordinates,
     source.gpxCoordinates,
     track?.coordinates,
+    ...trackVariants.map((variant) => recordOrNull(variant)?.coordinates),
   ];
   const trackCoordinates =
     trackCandidates
@@ -285,8 +308,8 @@ export function normalizeRideGuide(value: unknown): RideGuide | null {
     elevationFeet: numberOrNull(source.elevationFeet),
     difficulty: stringOrNull(source.difficulty),
     rating: numberOrNull(source.rating),
-    thumbnailUrl: stringOrNull(source.thumbnailUrl),
-    featuredImage: stringOrNull(source.featuredImage),
+    thumbnailUrl: rideGuideImageUrl(source.thumbnailUrl),
+    featuredImage: rideGuideImageUrl(source.featuredImage),
     directions: stringOrNull(source.directions),
     features:
       typeof source.features === "string" || Array.isArray(source.features)

@@ -29,6 +29,7 @@ import { scendersDesign as design } from "@/constants/scendersDesign";
 import { geocodeDestination } from "@/lib/geocoding";
 import {
   listRideGuides,
+  rideGuideImageUrls,
   type RideGuide,
 } from "@/lib/rideForest";
 
@@ -57,8 +58,9 @@ function RideCard({
   distance: number | null;
   onPress: () => void;
 }) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const imageUrl = item.featuredImage || item.thumbnailUrl;
+  const [imageIndex, setImageIndex] = useState(0);
+  const imageUrl = rideGuideImageUrls(item)[imageIndex];
+  useEffect(() => setImageIndex(0), [item.id]);
 
   return (
     <Pressable
@@ -68,13 +70,13 @@ function RideCard({
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       <View style={styles.cardMedia}>
-        {imageUrl && !imageFailed ? (
+        {imageUrl ? (
           <Image
             source={{ uri: imageUrl }}
             style={styles.cardImage}
             contentFit="cover"
             transition={180}
-            onError={() => setImageFailed(true)}
+            onError={() => setImageIndex((index) => index + 1)}
           />
         ) : (
           <View style={styles.imageFallback}>
@@ -85,7 +87,7 @@ function RideCard({
             />
           </View>
         )}
-        {imageUrl && !imageFailed ? (
+        {imageUrl ? (
           <LinearGradient
             colors={["rgba(0,0,0,0.02)", "rgba(0,0,0,0.62)"]}
             style={StyleSheet.absoluteFill}
